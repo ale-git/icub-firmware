@@ -19,6 +19,8 @@
 #ifndef MC_JOINT_SET___
 #define MC_JOINT_SET___
 
+#include "Position_Controller.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -93,6 +95,8 @@ typedef struct // JointSet
     int32_t calibration_timeout;
     
     TripodCalib tripod_calib;
+		
+		Position_ControllerModelClass wristController;
 
 } JointSet;
 
