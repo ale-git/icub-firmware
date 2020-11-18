@@ -19,7 +19,7 @@
 #ifndef MC_JOINT_SET___
 #define MC_JOINT_SET___
 
-#include "Position_Controller.h"
+#include "wrist_decoupler.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -95,9 +95,13 @@ typedef struct // JointSet
     int32_t calibration_timeout;
     
     TripodCalib tripod_calib;
-		
-		Position_ControllerModelClass wristController;
-
+    
+    // WRIST
+    
+    wrist_decouplerModelClass wrist_decoupler;
+    
+    CTRL_UNITS wrist_motor_theta[3];
+    
 } JointSet;
 
 extern JointSet* JointSet_new(uint8_t n); //
@@ -121,7 +125,7 @@ extern void JointSet_config //
     float** Sjm
 );
 
-extern void JointSet_do_odometry(JointSet* o); //
+extern void JointSet_do_wrist_odometry(JointSet* o); //
 extern BOOL JointSet_do_check_faults(JointSet* o); //
 extern void JointSet_do_control(JointSet* o); //
 
@@ -132,14 +136,27 @@ extern void JointSet_set_interaction_mode(JointSet* o, eOmc_interactionmode_t in
 
 extern void JointSet_calibrate(JointSet* o, uint8_t e, eOmc_calibrator_t *calibrator);
 
-extern void JointSet_do_pwm_control(JointSet* o);
+extern void JointSet_do_wrist_control(JointSet* o);
     
 extern void JointSet_send_debug_message(char *message, uint8_t jid, uint16_t par16, uint32_t par64);
 
 #ifdef __cplusplus
 }       // closing brace for extern "C"
 #endif 
- 
+
+//#include <vector>
+
+//class MotorClass;
+//class JointClass;
+
+//class JointSetClass
+//{
+//public:
+//    JointSetClass(){}
+//    std::vector<MotorClass*> motors;
+//    std::vector<JointClass*> joints;
+//};	
+
 #endif  // include-guard
 
 

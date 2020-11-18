@@ -1023,14 +1023,14 @@
               <FilePath>..\..\..\..\..\embobj\plus\mc\WatchDog.c</FilePath>
             </File>
             <File>
-              <FileName>Position_Controller.cpp</FileName>
+              <FileName>wrist_decoupler.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\..\..\..\..\embobj\plus\mc\Position_Controller.cpp</FilePath>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\wrist_decoupler.cpp</FilePath>
             </File>
             <File>
-              <FileName>Position_Controller_data.cpp</FileName>
+              <FileName>wrist_decoupler_data.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\..\..\..\..\embobj\plus\mc\Position_Controller_data.cpp</FilePath>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\wrist_decoupler_data.cpp</FilePath>
             </File>
           </Files>
         </Group>
@@ -2368,14 +2368,14 @@
               <FilePath>..\..\..\..\..\embobj\plus\mc\WatchDog.c</FilePath>
             </File>
             <File>
-              <FileName>Position_Controller.cpp</FileName>
+              <FileName>wrist_decoupler.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\..\..\..\..\embobj\plus\mc\Position_Controller.cpp</FilePath>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\wrist_decoupler.cpp</FilePath>
             </File>
             <File>
-              <FileName>Position_Controller_data.cpp</FileName>
+              <FileName>wrist_decoupler_data.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\..\..\..\..\embobj\plus\mc\Position_Controller_data.cpp</FilePath>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\wrist_decoupler_data.cpp</FilePath>
             </File>
           </Files>
         </Group>

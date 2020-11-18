@@ -89,6 +89,8 @@ void JointSet_init(JointSet* o) //
     o->special_constraint = eomc_jsetconstraint_none;
     
     o->calibration_in_progress = eomc_calibration_typeUndefined;
+    
+    o->wrist_decoupler.initialize();
 }
 
 void JointSet_config //
@@ -120,131 +122,27 @@ void JointSet_config //
     o->Sje = Sje;
 }
 
-void JointSet_do_odometry(JointSet* o) //
+void JointSet_do_wrist_odometry(JointSet* o) //
 {
     int js, j;
-    int ms, m;
-
     int N = *(o->pN);
-            
-    float **Sjm = o->Sjm;
     
-    if (Sjm)
-    {
-        for (js=0; js<N; ++js)
-        {
-            j = o->joints_of_set[js];
-
-            o->joint[j].pos_fbk_from_motors = ZERO;
-            o->joint[j].vel_fbk_from_motors = ZERO;
-            
-            for (ms=0; ms<N; ++ms)
-            {
-                m = o->motors_of_set[ms];
-        
-                o->joint[j].pos_fbk_from_motors += Sjm[j][m] * (float)o->motor[m].pos_fbk;
-                o->joint[j].vel_fbk_from_motors += Sjm[j][m] * (float)o->motor[m].vel_fbk;
-            }
-        }
-    }
-    else
-    {
-        for (js=0; js<N; ++js)
-        {
-            j = o->joints_of_set[js];
-            
-            o->joint[j].pos_fbk_from_motors = (float)o->motor[j].pos_fbk;
-            o->joint[j].vel_fbk_from_motors = (float)o->motor[j].vel_fbk;
-        }
-    }
-    
-    if (!o->Sje) // no encoder coupling
-    {
-        for (js=0; js<N; ++js)
-        {    
-            j = o->encoders_of_set[js];
-        
-            if (AbsEncoder_is_fake(o->absEncoder+j))
-            {
-                o->joint[j].pos_fbk = o->joint[j].pos_fbk_from_motors;
-                o->joint[j].vel_fbk = o->joint[j].vel_fbk_from_motors;
-            }
-            else
-            {
-                o->joint[j].pos_fbk = AbsEncoder_position(o->absEncoder+j);
-                
-                if (o->USE_SPEED_FBK_FROM_MOTORS)
-                {
-                    o->joint[j].vel_fbk = o->joint[j].vel_fbk_from_motors;
-                }
-                else
-                {
-                    o->joint[j].vel_fbk = AbsEncoder_velocity(o->absEncoder+j);
-                }
-            }
-        }
-        
-        //return;
-    }
-    else // encoder coupling
-    {
-        int E = *(o->pE);
-        
-        float pos[MAX_ENCODS_PER_BOARD];
-        float vel[MAX_ENCODS_PER_BOARD];
-        
-        int es, e;
-        
-        for (es=0; es<E; ++es)
-        {    
-            e = o->encoders_of_set[es];
-            
-            if (AbsEncoder_is_fake(o->absEncoder+e))
-            {
-                pos[e] = o->joint[e].pos_fbk_from_motors;
-                vel[e] = o->joint[e].vel_fbk_from_motors;
-            }
-            else
-            {
-                pos[e] = AbsEncoder_position(o->absEncoder+e);
-                
-                if (o->USE_SPEED_FBK_FROM_MOTORS)
-                {
-                    vel[e] = o->joint[e].vel_fbk_from_motors;
-                }
-                else
-                {
-                    vel[e] = AbsEncoder_velocity(o->absEncoder+e);
-                }
-            }
-        }
-    
-        float **Sje = o->Sje;
-        
-        for (js=0; js<N; ++js)
-        {
-            j = o->joints_of_set[js];
-        
-            o->joint[j].pos_fbk = ZERO;
-            o->joint[j].vel_fbk = ZERO;
-            
-            for (es=0; es<E; ++es)
-            {
-                e = o->encoders_of_set[es];
-                
-                o->joint[j].pos_fbk += Sje[j][e] * pos[e];
-                o->joint[j].vel_fbk += Sje[j][e] * vel[e];
-            }
-        }
-    }
-    
-    // accelerations
     for (js=0; js<N; ++js)
-    {
-        j = o->joints_of_set[js];
-        o->joint[j].acc_fbk = CTRL_LOOP_FREQUENCY*(o->joint[j].vel_fbk - o->joint[j].vel_fbk_old);
-        o->joint[j].vel_fbk_old = o->joint[j].vel_fbk;
+    {    
+        j = o->encoders_of_set[js];
+        
+        o->wrist_motor_theta[js] = AbsEncoder_position(o->absEncoder+j);
     }
+    
+    //o->joint[j].pos_fbk = AbsEncoder_position(o->absEncoder+j);
+    
+//    // accelerations
+//    for (js=0; js<N; ++js)
+//    {
+//        j = o->joints_of_set[js];
+//        o->joint[j].acc_fbk = CTRL_LOOP_FREQUENCY*(o->joint[j].vel_fbk - o->joint[j].vel_fbk_old);
+//        o->joint[j].vel_fbk_old = o->joint[j].vel_fbk;
+//    }
 }
 
 BOOL JointSet_do_check_faults(JointSet* o)
@@ -331,34 +229,17 @@ BOOL JointSet_do_check_faults(JointSet* o)
 static void JointSet_do_vel_control(JointSet* o);
 static void JointSet_do_current_control(JointSet* o);
 
-void JointSet_do_control(JointSet* o)
-{
-    switch (o->motor_input_type)
-    {
-    case eomc_ctrl_out_type_pwm:
-        JointSet_do_pwm_control(o);
-        return;
-    
-    case eomc_ctrl_out_type_vel:
-        JointSet_do_vel_control(o);
-        return;
-    
-    case eomc_ctrl_out_type_cur:
-        JointSet_do_current_control(o);
-        return;
-    }
-}
-
 static void JointSet_do_wait_calibration(JointSet* o);
 
 void JointSet_do(JointSet* o)
 {
-    JointSet_do_odometry(o);
+    JointSet_do_wrist_odometry(o);
+    
     JointSet_do_check_faults(o);
     
     if (o->is_calibrated)
     {                
-        JointSet_do_control(o);
+        JointSet_do_wrist_control(o);
     }
     else
     {
@@ -554,82 +435,11 @@ void JointSet_set_interaction_mode(JointSet* o, eOmc_interactionmode_t interacti
 //////////////////////////////////////////////////////////////////////////
 // statics
 
-static void JointSet_manage_cable_constraint(JointSet* o)
+void JointSet_do_wrist_control(JointSet* o)
 {
-    for (int k=0; k<*(o->pN); ++k)
-    {
-        if (Joint_manage_cable_constraint(o->joint+o->joints_of_set[k]))
-        {
-            o->motor[o->motors_of_set[k]].output = 0; 
-        }
-    }
-}
-
-static void JointSet_manage_R1_finger_tension_constraint(JointSet* o)
-{
-    for (int k=0; k<*(o->pN); ++k)
-    {
-        if (Joint_manage_R1_finger_tension_constraint(o->joint+o->joints_of_set[k]))
-        {
-            o->motor[o->motors_of_set[k]].output = 0; 
-        }
-    }
-}
-
-static void JointSet_manage_trifid_constraint(JointSet* o)
-{
-    int j0 = o->joints_of_set[0];
-    int j1 = o->joints_of_set[1];
-    int j2 = o->joints_of_set[2];
-
-    int m0 = o->motors_of_set[0];
-    int m1 = o->motors_of_set[1];
-    int m2 = o->motors_of_set[2];
+    const CTRL_UNITS ICUB2DEG = 1.0f/182.044f; 
+    const CTRL_UNITS DEG2ICUB = 182.044f;
     
-    int32_t rho0 = o->joint[j0].pos_fbk;
-    int32_t rho1 = o->joint[j1].pos_fbk;
-    int32_t rho2 = o->joint[j2].pos_fbk;
-
-    if (rho0*rho0+rho1*rho1+rho2*rho2-rho0*rho1-rho1*rho2-rho2*rho0 < o->special_limit)
-    {
-        return;
-    }
-    
-    int32_t out0 = o->motor[m0].output;
-    int32_t out1 = o->motor[m1].output;
-    int32_t out2 = o->motor[m2].output;
-    
-    if (o->joint[j0].minjerkPID.Kp < 0.0f)
-    {
-        out0 = -out0;
-        out1 = -out1;
-        out2 = -out2;
-    }
-    
-    if ( !(rho0<=rho1 && rho0<=rho2 && out0>=0) 
-      && !(rho0>=rho1 && rho0>=rho2 && out0<=0))
-    {
-        o->motor[j0].output = 0;
-        Joint_stop(o->joint+j0);
-    }
-                
-    if ( !(rho1<=rho2 && rho1<=rho0 && out1>=0) 
-      && !(rho1>=rho2 && rho1>=rho0 && out1<=0))
-    {
-        o->motor[j1].output = 0;
-        Joint_stop(o->joint+j1);
-    }
-                
-    if ( !(rho2<=rho0 && rho2<=rho1 && out2>=0) 
-      && !(rho2>=rho0 && rho2>=rho1 && out2<=0))
-    {
-        o->motor[j2].output = 0;
-        Joint_stop(o->joint+j2);
-    }
-}
-
-void JointSet_do_pwm_control(JointSet* o)
-{
     int N = *(o->pN);
         
     BOOL limits_torque_protection = FALSE;
@@ -638,12 +448,23 @@ void JointSet_do_pwm_control(JointSet* o)
     {
         Joint *pJoint = o->joint+o->joints_of_set[js];
         
-        Joint_do_pwm_or_current_control(pJoint);
-       
-        if (o->trq_control_active && Joint_pushing_limit(pJoint))
-        {
-            limits_torque_protection = TRUE;
-        }
+        Joint_do_wrist_control(pJoint);
+        
+        o->wrist_decoupler.rtU.ypr[0] = ICUB2DEG*pJoint->pos_ref;
+        o->wrist_decoupler.rtU.theta_meas[0] = ICUB2DEG*o->wrist_motor_theta[js];
+    }
+    
+    o->wrist_decoupler.step();
+    
+    CTRL_UNITS motor_pos_ref[3];
+
+    for (int js=0; js<N; ++js)
+    {
+        Joint *pJoint = o->joint+o->joints_of_set[js];
+        
+        pJoint->pos_fbk = DEG2ICUB*(o->wrist_decoupler.rtY.ypr_meas[js]);
+        
+        motor_pos_ref[js] = DEG2ICUB*(o->wrist_decoupler.rtY.theta_star[js]);
     }
     
     CTRL_UNITS motor_pwm_ref = ZERO;
@@ -651,333 +472,15 @@ void JointSet_do_pwm_control(JointSet* o)
     for (int ms=0; ms<N; ++ms)
     {
         int m = o->motors_of_set[ms];
-    
-        if (o->trq_control_active)
-        {   
-            if (o->Jjm)
-            {
-                CTRL_UNITS motor_trq_ref = ZERO;
-                CTRL_UNITS motor_trq_fbk = ZERO;
             
-                for (int js=0; js<N; ++js)
-                {
-                    int j = o->joints_of_set[js];
-                
-                    // mu = Jt Tau 
-                    // transposed direct Jacobian
-                    motor_trq_ref += o->Jjm[j][m]*o->joint[j].trq_ref;
-                    motor_trq_fbk += o->Jjm[j][m]*o->joint[j].trq_fbk;
-                }
-                
-                motor_pwm_ref = Motor_do_trq_control(o->motor+m, motor_trq_ref, motor_trq_fbk);
-            }
-            else
-            {
-                motor_pwm_ref = Motor_do_trq_control(o->motor+m, o->joint[m].trq_ref, o->joint[m].trq_fbk);
-            }
-        }
-        else
-        {
-            if (o->Jmj)
-            {
-                motor_pwm_ref = ZERO;
-            
-                for (int js=0; js<N; ++js)
-                {
-                    int j = o->joints_of_set[js];
-                
-                    // inverse FALSE Jacobian
-                    motor_pwm_ref += o->Jmj[m][j]*o->joint[j].output;
-                }
-            }
-            else
-            {
-                motor_pwm_ref = o->joint[m].output;
-            }
-        }
+        motor_pwm_ref = Motor_do_pos_control(o->motor+m, motor_pos_ref[m], o->wrist_motor_theta[m]);
 
         Motor_set_pwm_ref(o->motor+m, motor_pwm_ref);
     }
     
-    if (limits_torque_protection)
-    {
-        CTRL_UNITS joint_pwm_ref[MAX_JOINTS_PER_BOARD];
-        
-        for (int js=0; js<N; ++js)
-        {
-            int j = o->joints_of_set[js];
-            
-            if (o->Smj)
-            {
-                joint_pwm_ref[j] = ZERO;
-            
-                for (int ms=0; ms<N; ++ms)
-                {
-                    int m = o->motors_of_set[ms];
-                
-                    // transposed inverse Jacobian
-                    joint_pwm_ref[j] += o->Smj[m][j]*o->motor[m].pwm_ref;
-                }
-            }
-            else
-            {
-                joint_pwm_ref[j] = o->motor[j].pwm_ref;
-            }
-            
-            if (Joint_pushing_limit(o->joint+j))
-            {
-                if ((o->joint[j].output_lim > ZERO) ^ (o->joint[j].output_lim < joint_pwm_ref[j]))
-                {
-                    joint_pwm_ref[j] = o->joint[j].output_lim; 
-                }
-            }
-        }
-        
-        for (int ms=0; ms<N; ++ms)
-        {
-            int m = o->motors_of_set[ms];
-        
-            if (o->Jjm)
-            {
-                motor_pwm_ref = ZERO;
-            
-                for (int js=0; js<N; ++js)
-                {
-                    int j = o->joints_of_set[js];
-                
-                    // transposed jacobian
-                    motor_pwm_ref += o->Jjm[j][m]*joint_pwm_ref[j];
-                }
-            
-                Motor_set_pwm_ref(o->motor+m, motor_pwm_ref);
-            }
-            else
-            {
-                Motor_set_pwm_ref(o->motor+m, joint_pwm_ref[m]);
-            }
-        }
-    }
-    
-    switch (o->special_constraint)
-    {
-        case eomc_jsetconstraint_trifid:
-            JointSet_manage_trifid_constraint(o);
-            break;
-        
-        case eomc_jsetconstraint_cerhand:
-            JointSet_manage_cable_constraint(o);
-            break;
-        
-        case eomc_jsetconstraint_cerhand2:
-            JointSet_manage_R1_finger_tension_constraint(o);
-            break;
-
-        default:
-            break;
-    }
-}
-
-static void JointSet_do_current_control(JointSet* o)
-{
-    int N = *(o->pN);
-        
-    BOOL limits_torque_protection = FALSE;
-        
-    for (int js=0; js<N; ++js)
-    {
-        Joint *pJoint = o->joint+o->joints_of_set[js];
-        
-        Joint_do_pwm_or_current_control(pJoint);
-       
-        if (o->trq_control_active && Joint_pushing_limit(pJoint))
-        {
-            limits_torque_protection = TRUE;
-        }
-    }
-    
-    CTRL_UNITS motor_current_ref = ZERO;
-    
-    for (int ms=0; ms<N; ++ms)
-    {
-        int m = o->motors_of_set[ms];
-    
-        if (o->trq_control_active)
-        {   
-            if (o->Jjm)
-            {
-                CTRL_UNITS motor_trq_ref = ZERO;
-                CTRL_UNITS motor_trq_fbk = ZERO;
-            
-                for (int js=0; js<N; ++js)
-                {
-                    int j = o->joints_of_set[js];
-                
-                    // mu = Jt Tau 
-                    // transposed direct Jacobian
-                    motor_trq_ref += o->Jjm[j][m]*o->joint[j].trq_ref;
-                    motor_trq_fbk += o->Jjm[j][m]*o->joint[j].trq_fbk;
-                }
-                
-                motor_current_ref = Motor_do_trq_control(o->motor+m, motor_trq_ref, motor_trq_fbk);
-            }
-            else
-            {
-                motor_current_ref = Motor_do_trq_control(o->motor+m, o->joint[m].trq_ref, o->joint[m].trq_fbk);
-            }
-        }
-        else
-        {
-            //if (o->Jmj)
-            if (o->Jjm)
-            {
-                motor_current_ref = ZERO;
-            
-                for (int js=0; js<N; ++js)
-                {
-                    int j = o->joints_of_set[js];
-                
-                    // inverse FALSE Jacobian NO!!!
-                    // motor_current_ref += o->Jmj[m][j]*o->joint[j].output;
-                    // transposed direct Jacobian
-                    motor_current_ref += o->Jjm[j][m]*o->joint[j].output;
-                }
-            }
-            else
-            {
-                motor_current_ref = o->joint[m].output;
-            }
-        }
-
-        Motor_set_Iqq_ref(o->motor+m, motor_current_ref);
-    }
-    
-    if (limits_torque_protection)
-    {
-        CTRL_UNITS joint_current_ref[MAX_JOINTS_PER_BOARD];
-        
-        for (int js=0; js<N; ++js)
-        {
-            int j = o->joints_of_set[js];
-            
-            if (o->Smj)
-            {
-                joint_current_ref[j] = ZERO;
-            
-                for (int ms=0; ms<N; ++ms)
-                {
-                    int m = o->motors_of_set[ms];
-                
-                    // transposed inverse Jacobian
-                    joint_current_ref[j] += o->Smj[m][j]*o->motor[m].Iqq_ref;
-                }
-            }
-            else
-            {
-                joint_current_ref[j] = o->motor[j].Iqq_ref;
-            }
-            
-            if (Joint_pushing_limit(o->joint+j))
-            {
-                if ((o->joint[j].output_lim > ZERO) ^ (o->joint[j].output_lim < joint_current_ref[j]))
-                {
-                    joint_current_ref[j] = o->joint[j].output_lim; 
-                }
-            }
-        }
-        
-        for (int ms=0; ms<N; ++ms)
-        {
-            int m = o->motors_of_set[ms];
-        
-            if (o->Jjm)
-            {
-                motor_current_ref = ZERO;
-            
-                for (int js=0; js<N; ++js)
-                {
-                    int j = o->joints_of_set[js];
-                
-                    // transposed jacobian
-                    motor_current_ref += o->Jjm[j][m]*joint_current_ref[j];
-                }
-            
-                Motor_set_Iqq_ref(o->motor+m, motor_current_ref);
-            }
-            else
-            {
-                Motor_set_Iqq_ref(o->motor+m, joint_current_ref[m]);
-            }
-        }
-    }
-    
-    switch (o->special_constraint)
-    {
-        case eomc_jsetconstraint_trifid:
-            JointSet_manage_trifid_constraint(o);
-            break;
-        
-        case eomc_jsetconstraint_cerhand:
-            JointSet_manage_cable_constraint(o);
-            break;
-
-        default:
-            break;
-    }
-}
-
-static void JointSet_do_vel_control(JointSet* o)
-{
-    int N = *(o->pN);
-
-    for (int js=0; js<N; ++js)
-    {
-        Joint_do_vel_control(o->joint+o->joints_of_set[js]);
-    }
-    
-    for (int ms=0; ms<N; ++ms)
-    {
-        int m = o->motors_of_set[ms];
-    
-        if (o->Smj)
-        {
-            // inverse Jacobian
-            float **Ji = o->Smj; 
-            
-            CTRL_UNITS motor_vel_ref = ZERO;
-        
-            for (int js=0; js<N; ++js)
-            {
-                int j = o->joints_of_set[js];
-                
-                // inverse Jacobian OK
-                motor_vel_ref += Ji[m][j]*o->joint[j].output;
-            }
-        
-            Motor_set_vel_ref(o->motor+m, motor_vel_ref);
-        }
-        else
-        {
-            Motor_set_vel_ref(o->motor+m, o->joint[m].output);
-        }
-    }
-    
-    switch (o->special_constraint)
-    {
-        case eomc_jsetconstraint_trifid:
-            JointSet_manage_trifid_constraint(o);
-            break;
-        
-        case eomc_jsetconstraint_cerhand:
-            JointSet_manage_cable_constraint(o);
-            break;
-        
-        case eomc_jsetconstraint_cerhand2:
-            JointSet_manage_R1_finger_tension_constraint(o);
-            break;
-
-        default:
-            break;
-    }
+//    switch (o->special_constraint)
+//    {
+//    }
 }
 
 static void JointSet_set_inner_control_flags(JointSet* o)
@@ -1059,60 +562,8 @@ static void JointSet_do_wait_calibration(JointSet* o)
         }
     }
 
-    o->is_calibrated = TRUE;
-    
-    switch (o->calibration_in_progress)
-    {
-        case eomc_calibration_type3_abs_sens_digital:
-            o->is_calibrated = JointSet_do_wait_calibration_3(o);
-            break;
+    o->is_calibrated = JointSet_do_wait_wrist_calibration(o);
         
-        case eomc_calibration_type5_hard_stops:
-            o->is_calibrated = JointSet_do_wait_calibration_5(o);
-            break;
-            
-//        case eomc_calibration_type6_mais: ==> managed in mixed
-//            o->is_calibrated = JointSet_do_wait_calibration_6(o);
-//            break;
-//        
-//        case eomc_calibration_type7_hall_sensor: ==> managed in mixed
-//            o->is_calibrated = JointSet_do_wait_calibration_7(o);
-//            break;
-
-        case eomc_calibration_type8_tripod_internal_hard_stop:
-            o->is_calibrated = JointSet_do_wait_calibration_8(o);
-            break;
-        
-        case eomc_calibration_type9_tripod_external_hard_stop:
-            o->is_calibrated = JointSet_do_wait_calibration_9(o);
-            break;
-
-        case eomc_calibration_type10_abs_hard_stop:
-            o->is_calibrated = JointSet_do_wait_calibration_10(o);
-            break;
-            
-        case eomc_calibration_type11_cer_hands:
-            o->is_calibrated = JointSet_do_wait_calibration_11(o);
-            break;
-        
-        case eomc_calibration_type12_absolute_sensor:
-            o->is_calibrated = JointSet_do_wait_calibration_12(o);
-            break;
-            
-        case eomc_calibration_type13_cer_hands_2:
-            o->is_calibrated = JointSet_do_wait_calibration_13(o);
-            break;
-            
-        
-        case eomc_calibration_typeMixed:
-            o->is_calibrated = JointSet_do_wait_calibration_mixed(o);
-            break;
-        
-        default:
-            o->is_calibrated = FALSE;
-            break;
-    }
-    
     if (!o->is_calibrated) return;
     
     for (int es=0; es<E; ++es)
@@ -1126,7 +577,7 @@ static void JointSet_do_wait_calibration(JointSet* o)
     
     o->calibration_in_progress = eomc_calibration_typeUndefined;
     
-    JointSet_do_odometry(o);
+    JointSet_do_wrist_odometry(o);
     
     o->control_mode = eomc_controlmode_idle;
 
@@ -1382,7 +833,7 @@ void JointSet_calibrate(JointSet* o, uint8_t e, eOmc_calibrator_t *calibrator)
             AbsEncoder_calibrate_absolute(enc+1, calibrator->params.type11.offset1, enc[1].mul*32767);
             AbsEncoder_calibrate_absolute(enc+2, calibrator->params.type11.offset2, enc[2].mul*32767);
             
-            JointSet_do_odometry(o);
+            JointSet_do_wrist_odometry(o);
             
             Motor_calibrate_withOffset(o->motor+e, 0);
             Motor_set_run(o->motor+e, eomc_ctrl_out_type_pwm);
@@ -1499,7 +950,7 @@ void JointSet_calibrate(JointSet* o, uint8_t e, eOmc_calibrator_t *calibrator)
             }
             */
             
-            JointSet_do_odometry(o);
+            JointSet_do_wrist_odometry(o);
             
             Motor_calibrate_withOffset(o->motor+e, 0);
             o->calibration_in_progress = (eOmc_calibration_type_t)calibrator->type;

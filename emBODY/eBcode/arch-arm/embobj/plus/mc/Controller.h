@@ -117,7 +117,7 @@ extern void MController_config_minjerk_pid(int j, eOmc_PID_t *pid_conf); //
 extern void MController_config_direct_pid(int j, eOmc_PID_t *pid_conf); //
 
 extern void MController_motor_config_current_PID(int m, eOmc_PID_t* pid);
-extern void MController_motor_config_torque_PID(int m, eOmc_PID_t *pid);
+extern void MController_motor_config_pos_PID(int m, eOmc_PID_t *pid);
 extern void MController_motor_config_speed_PID(int m, eOmc_PID_t *pid);
 
 extern void MController_config_joint_pos_limits(int j, int32_t pos_min, int32_t pos_max);

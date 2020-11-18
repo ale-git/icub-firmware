@@ -213,11 +213,7 @@ extern int8_t Joint_pushing_limit(Joint* o);
 extern void Joint_set_limits(Joint* o, CTRL_UNITS pos_min, CTRL_UNITS pos_max);
 extern void Joint_set_hardware_limit(Joint* o);
 
-extern BOOL Joint_manage_cable_constraint(Joint* o);
-extern BOOL Joint_manage_R1_finger_tension_constraint(Joint* o);
-
-extern CTRL_UNITS Joint_do_pwm_or_current_control(Joint* o);
-extern CTRL_UNITS Joint_do_vel_control(Joint* o);
+extern BOOL Joint_do_wrist_control(Joint* o);
 
 extern BOOL Joint_set_control_mode(Joint* o, eOmc_controlmode_command_t control_mode);
 extern BOOL Joint_set_interaction_mode(Joint* o, eOmc_interactionmode_t interaction_mode);
@@ -237,11 +233,6 @@ extern BOOL Joint_set_trq_ref(Joint* o, CTRL_UNITS trq_ref);
 extern BOOL Joint_set_pwm_ref(Joint* o, CTRL_UNITS pwm_ref);
 extern BOOL Joint_set_cur_ref(Joint* o, CTRL_UNITS cur_ref);
 extern void Joint_stop(Joint* o);
-
-extern BOOL Joint_set_pos_ref_in_calibType6(Joint* o, CTRL_UNITS pos_ref, CTRL_UNITS vel_ref);
-
-//VALE: debug function. I'll remove it ASAP
-//extern void Joint_update_debug_current_info(Joint *o, int32_t avgCurrent, int32_t accum_Ep);
 
 #ifdef __cplusplus
 }       // closing brace for extern "C"

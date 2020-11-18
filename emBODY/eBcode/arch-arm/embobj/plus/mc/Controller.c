@@ -1348,10 +1348,10 @@ void MController_config_joint(int j, eOmc_joint_config_t* config) //
     MController_config_direct_pid(j, &(config->pidtrajectory));
     //MController_config_direct_pid(j, &(config->piddirect));
     
-    MController_motor_config_torque_PID(j, &(config->pidtorque));
+    MController_motor_config_pos_PID(j, &(config->pidtrajectory));
     
-    Motor_config_filter(o->motor+j,   config->tcfiltertype);
-    Motor_config_friction(o->motor+j, config->motor_params.bemf_value, config->motor_params.ktau_value);   
+    //Motor_config_filter(o->motor+j,   config->tcfiltertype);
+    //Motor_config_friction(o->motor+j, config->motor_params.bemf_value, config->motor_params.ktau_value);   
     
     Joint_config(o->joint+j, j, config);
     
@@ -1378,7 +1378,7 @@ void MController_config_joint_impedance(int j, eOmc_impedance_t* impedance) //
 }
 
 extern void MController_motor_config_current_PID(int m, eOmc_PID_t* pid);
-extern void MController_motor_config_torque_PID(int m, eOmc_PID_t *pid);
+extern void MController_motor_config_pos_PID(int m, eOmc_PID_t *pid);
 extern void MController_motor_config_speed_PID(int m, eOmc_PID_t *pid);
 
 void MController_motor_config_current_PID(int m, eOmc_PID_t* pid)
@@ -1386,10 +1386,10 @@ void MController_motor_config_current_PID(int m, eOmc_PID_t* pid)
     Motor_config_current_PID(smc->motor+m, pid);
 }
 
-void MController_motor_config_torque_PID(int m, eOmc_PID_t *pid)
+void MController_motor_config_pos_PID(int m, eOmc_PID_t *pid)
 {
     //Motor_config_trqPID(smc->motor+m, pid);
-    PID_config(&(smc->motor[m].trqPID), pid);
+    PID_config(&(smc->motor[m].posPID), pid);
 }
 
 void MController_motor_config_speed_PID(int m, eOmc_PID_t* pid)

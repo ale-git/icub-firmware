@@ -365,9 +365,9 @@ void Motor_config_current_PID(Motor* o, eOmc_PID_t* pidcurrent)
     }
 }
 
-void Motor_config_torque_PID(Motor* o, eOmc_PID_t* pid) //
+void Motor_config_pos_PID(Motor* o, eOmc_PID_t* pid) //
 {
-    PID_config(&o->trqPID, pid);
+    PID_config(&o->posPID, pid);
 }
 
 void Motor_config_speed_PID(Motor* o, eOmc_PID_t* pidvelocity)
@@ -385,12 +385,12 @@ void Motor_destroy(Motor* o) //
 
 void Motor_config_filter(Motor* o, uint8_t filter) //
 {
-    PID_config_filter(&o->trqPID, filter);
+    PID_config_filter(&o->posPID, filter);
 }
 
 void Motor_config_friction(Motor* o, float Bemf, float Ktau) //
 {
-    PID_config_friction(&o->trqPID, Bemf, Ktau);
+    PID_config_friction(&o->posPID, Bemf, Ktau);
 }
 
 void Motor_calibrate_withOffset(Motor* o, int32_t offset) //
@@ -821,7 +821,7 @@ void Motor_raise_fault_external(Motor* o)
 */
 void Motor_motion_reset(Motor *o) //
 {
-    PID_reset(&o->trqPID);
+    PID_reset(&o->posPID);
 }
 
 BOOL Motor_is_calibrated(Motor* o) //
@@ -829,14 +829,14 @@ BOOL Motor_is_calibrated(Motor* o) //
     return !(o->not_calibrated);
 }
 
-CTRL_UNITS Motor_do_trq_control(Motor* o, CTRL_UNITS trq_ref, CTRL_UNITS trq_fbk) //
+CTRL_UNITS Motor_do_pos_control(Motor* o, CTRL_UNITS pos_ref, CTRL_UNITS pos_fbk) //
 {
-    o->trq_ref = trq_ref;
-    o->trq_fbk = trq_fbk;
+    o->pos_ref = pos_ref;
+    o->pos_fbk = pos_fbk;
     
-    o->trq_err = trq_ref - trq_fbk;
+    o->pos_err = pos_ref - pos_fbk;
     
-    return PID_do_out(&o->trqPID, o->trq_err) + PID_do_friction_comp(&o->trqPID, o->vel_raw_fbk, o->trq_ref);
+    return PID_do_out(&o->posPID, o->pos_err);
 }
 
 void Motor_update_state_fbk(Motor* o, void* state) //

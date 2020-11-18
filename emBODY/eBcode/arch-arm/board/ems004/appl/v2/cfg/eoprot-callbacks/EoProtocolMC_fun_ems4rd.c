@@ -256,6 +256,7 @@ extern void eoprot_fun_UPDT_mc_joint_config_pidposition(const EOnv* nv, const eO
     if((eo_motcon_mode_foc == mcmode) || (eo_motcon_mode_mc4plus == mcmode) || (eo_motcon_mode_mc4plusmais == mcmode) || (eo_motcon_mode_mc2pluspsc == mcmode))
     {
         MController_config_minjerk_pid(jxx, pid);
+        MController_motor_config_pos_PID(jxx, pid);
     }
     else if(eo_motcon_mode_mc4 == mcmode)
     {
@@ -292,7 +293,7 @@ extern void eoprot_fun_UPDT_mc_joint_config_pidtorque(const EOnv* nv, const eOro
     
     if((eo_motcon_mode_foc == mcmode) || (eo_motcon_mode_mc4plus == mcmode) || (eo_motcon_mode_mc4plusmais == mcmode) || (eo_motcon_mode_mc2pluspsc == mcmode))
     {
-        MController_motor_config_torque_PID(jxx, pid);
+        //MController_motor_config_torque_PID(jxx, pid);
     }
     else if(eo_motcon_mode_mc4 == mcmode)
     {

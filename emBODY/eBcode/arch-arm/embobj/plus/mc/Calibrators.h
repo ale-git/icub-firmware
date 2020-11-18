@@ -28,17 +28,10 @@ extern "C" {
 #include "EOemsControllerCfg.h"
 
 
+extern BOOL JointSet_do_wait_wrist_calibration(JointSet* o);
 
-extern BOOL JointSet_do_wait_calibration_3(JointSet* o);
-extern BOOL JointSet_do_wait_calibration_5(JointSet* o);
-extern BOOL JointSet_do_wait_calibration_8(JointSet* o);
-extern BOOL JointSet_do_wait_calibration_9(JointSet* o);
-extern BOOL JointSet_do_wait_calibration_10(JointSet* o);
-extern BOOL JointSet_do_wait_calibration_11(JointSet* o);
-extern BOOL JointSet_do_wait_calibration_12(JointSet* o);
-extern BOOL JointSet_do_wait_calibration_13(JointSet* o);
-extern BOOL JointSet_do_wait_calibration_mixed(JointSet* o); //calib type 6 and 7
-
+//extern BOOL JointSet_do_wait_calibration_8(JointSet* o);
+//extern BOOL JointSet_do_wait_calibration_12(JointSet* o);
 
 #ifdef __cplusplus
 }       // closing brace for extern "C"

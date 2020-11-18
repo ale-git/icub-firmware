@@ -5,11 +5,11 @@
 //
 // File: rtwtypes.h
 //
-// Code generated for Simulink model 'Position_Controller'.
+// Code generated for Simulink model 'wrist_decoupler'.
 //
-// Model version                  : 2.0
+// Model version                  : 2.3
 // Simulink Coder version         : 9.4 (R2020b) 29-Jul-2020
-// C/C++ source code generated on : Wed Nov 11 09:08:01 2020
+// C/C++ source code generated on : Tue Nov 17 12:30:21 2020
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: ARM Compatible->ARM Cortex-M
