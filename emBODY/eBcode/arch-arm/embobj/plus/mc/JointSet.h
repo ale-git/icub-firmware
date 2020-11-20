@@ -102,6 +102,10 @@ typedef struct // JointSet
     
     CTRL_UNITS wrist_motor_theta[3];
     
+    Trajectory park_trajectory[3];
+    
+    BOOL parking;
+    
 } JointSet;
 
 extern JointSet* JointSet_new(uint8_t n); //

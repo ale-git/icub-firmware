@@ -474,6 +474,7 @@ BOOL Joint_do_wrist_control(Joint* o)
         }
         case eomc_controlmode_direct:
         case eomc_controlmode_position:
+            ret = TRUE;
         case eomc_controlmode_calib:
         {                
             Trajectory_do_step(&o->trajectory, &o->pos_ref, &o->vel_ref, &o->acc_ref);
@@ -483,8 +484,6 @@ BOOL Joint_do_wrist_control(Joint* o)
             o->trq_err = o->trq_ref = ZERO;
             
             o->output = o->pos_ref;
-            
-            ret = TRUE;
             
             break;
         }    
