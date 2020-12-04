@@ -97,6 +97,10 @@ void JointSet_init(JointSet* o) //
     Trajectory_init(&o->park_trajectory[0], 0, 0, 0);
     
     o->parking = FALSE;
+    
+    o->wrist_motor_theta_offset[0] = 145.0;
+    o->wrist_motor_theta_offset[1] = 270.0;
+    o->wrist_motor_theta_offset[2] =  40.0;
 }
 
 void JointSet_config //
@@ -295,6 +299,8 @@ static int control_output_type(JointSet* o, int16_t control_mode)
     }
 }
 
+static void JointSet_park(JointSet* o);
+
 BOOL JointSet_set_control_mode(JointSet* o, eOmc_controlmode_command_t control_mode_cmd)
 {
     if (control_mode_cmd != eomc_controlmode_cmd_force_idle)
@@ -380,6 +386,9 @@ BOOL JointSet_set_control_mode(JointSet* o, eOmc_controlmode_command_t control_m
         { 
             Joint_set_control_mode(o->joint+o->joints_of_set[k], control_mode_cmd);
         }
+        
+        JointSet_park(o);
+        
         break;
     }    
     default:
@@ -438,15 +447,61 @@ void JointSet_set_interaction_mode(JointSet* o, eOmc_interactionmode_t interacti
 //////////////////////////////////////////////////////////////////////////
 // statics
 
-void JointSet_do_wrist_control(JointSet* o)
+static const CTRL_UNITS ICUB2DEG = 1.0f/182.044f; 
+static const CTRL_UNITS DEG2ICUB = 182.044f;
+
+static void JointSet_park(JointSet* o)
 {
-    const CTRL_UNITS ICUB2DEG = 1.0f/182.044f; 
-    const CTRL_UNITS DEG2ICUB = 182.044f;
+    int N = *(o->pN);
     
+    for (int ms=0; ms<N; ++ms)
+    {
+        int m = o->motors_of_set[ms];
+
+        Motor_set_pwm_ref(o->motor+m, ZERO);
+                    
+        Trajectory_stop(o->park_trajectory+ms, o->wrist_motor_theta[ms]);
+        Trajectory_set_pos_end(o->park_trajectory+ms, ZERO, 20.0f*DEG2ICUB);
+    }
+                
+    o->parking = TRUE;
+}
+
+static void JointSet_wait_parking(JointSet* o)
+{
+    CTRL_UNITS pos_ref, vel_ref, acc_ref;
+    CTRL_UNITS motor_pwm_ref;
+    
+    BOOL parked = TRUE;
+    
+    for (int j = 0; j<3; ++j)
+    {
+        Trajectory_do_step(o->park_trajectory+j, &pos_ref, &vel_ref, &acc_ref);
+        
+        motor_pwm_ref = Motor_do_pos_control(o->motor+j, pos_ref, o->wrist_motor_theta[j]);
+        
+        Motor_set_pwm_ref(o->motor+j, motor_pwm_ref);
+        
+        parked = parked && (fabs(pos_ref - o->wrist_motor_theta[j])<DEG2ICUB);
+    }
+    
+    if (parked)
+    {
+        o->parking = FALSE;
+        
+        for (int j = 0; j<3; ++j)
+        {
+            Joint_stop(o->joint+j);
+        }
+    }
+}
+
+void JointSet_do_wrist_control(JointSet* o)
+{ 
     int N = *(o->pN);
     
     BOOL control_active = TRUE;
-        
+    
     for (int js=0; js<N; ++js)
     {
         int j = o->joints_of_set[js];
@@ -457,7 +512,7 @@ void JointSet_do_wrist_control(JointSet* o)
         if (!Joint_do_wrist_control(pJoint)) control_active = FALSE;
         
         o->wrist_decoupler.rtU.ypr[j] = ICUB2DEG*pJoint->pos_ref;
-        o->wrist_decoupler.rtU.theta_meas[m] = ICUB2DEG*o->wrist_motor_theta[m];
+        o->wrist_decoupler.rtU.theta_meas[m] = ICUB2DEG*o->wrist_motor_theta[m]+o->wrist_motor_theta_offset[m];
     }
     
     //////////////////////////
@@ -468,47 +523,13 @@ void JointSet_do_wrist_control(JointSet* o)
     {
         if (o->parking)
         {
-            CTRL_UNITS pos_ref, vel_ref, acc_ref;
-            CTRL_UNITS motor_pwm_ref;
-            
-            BOOL parked = TRUE;
-            
-            for (int j = 0; j<3; ++j)
-            {
-                Trajectory_do_step(o->park_trajectory+j, &pos_ref, &vel_ref, &acc_ref);
-                
-                motor_pwm_ref = Motor_do_pos_control(o->motor+j, pos_ref, o->wrist_motor_theta[j]);
-                
-                Motor_set_pwm_ref(o->motor+j, motor_pwm_ref);
-                
-                parked = parked && (fabs(pos_ref - o->wrist_motor_theta[j])<DEG2ICUB);
-            }
-            
-            if (parked)
-            {
-                o->parking = FALSE;
-                
-                for (int j = 0; j<3; ++j)
-                {
-                    Joint_stop(o->joint+j);
-                }
-            }
+            JointSet_wait_parking(o);
         }
         else
         {
             if (o->wrist_decoupler.rtY.singularity)
             {
-                for (int ms=0; ms<N; ++ms)
-                {
-                    int m = o->motors_of_set[ms];
-
-                    Motor_set_pwm_ref(o->motor+m, ZERO);
-                    
-                    Trajectory_stop(o->park_trajectory+ms, o->wrist_motor_theta[ms]);
-                    Trajectory_set_pos_end(o->park_trajectory+ms, ZERO, 20.0f*DEG2ICUB);
-                }
-                
-                o->parking = TRUE;
+                JointSet_park(o);
             }
             else
             {
@@ -520,7 +541,7 @@ void JointSet_do_wrist_control(JointSet* o)
         
                     pJoint->pos_fbk = DEG2ICUB*(o->wrist_decoupler.rtY.ypr_meas[js]);
         
-                    motor_pos_ref[js] = DEG2ICUB*(o->wrist_decoupler.rtY.theta_star[js]);
+                    motor_pos_ref[js] = DEG2ICUB*((o->wrist_decoupler.rtY.theta_star[js])-(o->wrist_motor_theta_offset[js]));
                 }
     
                 CTRL_UNITS motor_pwm_ref = ZERO;
@@ -628,10 +649,6 @@ static void JointSet_do_wait_calibration(JointSet* o)
     JointSet_set_control_mode(o, eomc_controlmode_cmd_position);
 }
 
-void JointSet_park(JointSet* o, uint8_t e)
-{
-}
-
 void JointSet_calibrate(JointSet* o, uint8_t e, eOmc_calibrator_t *calibrator)
 {
 //    for (int js=0; js<*(o->pN); ++js)
@@ -689,11 +706,12 @@ void JointSet_calibrate(JointSet* o, uint8_t e, eOmc_calibrator_t *calibrator)
             break;
         }
         
-        
-        
         default:
             break;
     }
+    
+    // implicit in Joint_set_controlmode but not wrong here
+    JointSet_park(o);
 }
 
 void JointSet_send_debug_message(char *message, uint8_t jid, uint16_t par16, uint32_t par64)

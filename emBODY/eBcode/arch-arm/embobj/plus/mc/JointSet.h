@@ -101,6 +101,7 @@ typedef struct // JointSet
     wrist_decouplerModelClass wrist_decoupler;
     
     CTRL_UNITS wrist_motor_theta[3];
+    CTRL_UNITS wrist_motor_theta_offset[3];
     
     Trajectory park_trajectory[3];
     
