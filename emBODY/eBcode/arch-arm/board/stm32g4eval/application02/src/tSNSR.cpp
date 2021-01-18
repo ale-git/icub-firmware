@@ -23,7 +23,11 @@
 #include "embot_hw_tlv493d.h"
 
 #include "embot_app_application_theFAPreader.h"
+#include "embot_app_application_thePOSreader2.h"
 
+#if defined(USE_PZMdriver) 
+#include "lr17_encoder.h"
+#endif
 
 // --------------------------------------------------------------------------------------------------------------------
 // - pimpl: private implementation (see scott meyers: item 22 of effective modern c++, item 31 of effective c++
@@ -131,8 +135,10 @@ struct embot::app::ctrl::tSNSR::Impl
     static void snsr_startup(embot::os::Thread *t, void *param)
     {
         embot::app::ctrl::tSNSR::Impl *impl = reinterpret_cast<embot::app::ctrl::tSNSR::Impl*>(param);
-        
 
+#if defined(USE_PZMdriver)         
+        lr17_encoder_init();
+#endif
     }
     
     static void snsr_onevent(embot::os::Thread *t, embot::os::EventMask eventmask, void *param)
@@ -142,8 +148,12 @@ struct embot::app::ctrl::tSNSR::Impl
             return;
         }
         
-        embot::app::application::theFAPreader &thefap = embot::app::application::theFAPreader::getInstance(); 
-        thefap.process(eventmask);
+#if defined(USE_thePOSreader2)
+        embot::app::application::thePOSreader2 &thereader = embot::app::application::thePOSreader2::getInstance(); 
+#else        
+        embot::app::application::theFAPreader &thereader = embot::app::application::theFAPreader::getInstance(); 
+#endif 
+        thereader.process(eventmask);
         
 //        embot::app::ctrl::tSNSR::Impl *impl = reinterpret_cast<embot::app::ctrl::tSNSR::Impl*>(param);
 

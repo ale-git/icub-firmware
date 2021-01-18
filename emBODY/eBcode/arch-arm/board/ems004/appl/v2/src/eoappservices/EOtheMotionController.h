@@ -64,7 +64,9 @@ typedef enum
     eo_motcon_mode_mc4          = eomn_serv_MC_mc4,
     eo_motcon_mode_mc4plus      = eomn_serv_MC_mc4plus,
     eo_motcon_mode_mc4plusmais  = eomn_serv_MC_mc4plusmais,
-    eo_motcon_mode_mc2pluspsc   = eomn_serv_MC_mc2pluspsc    
+    eo_motcon_mode_mc2pluspsc   = eomn_serv_MC_mc2pluspsc,
+    eo_motcon_mode_mc4plusfaps  = eomn_serv_MC_mc4plusfaps,
+    eo_motcon_mode_mc4pluspmc   = eomn_serv_MC_mc4pluspmc    
 } eOmotioncontroller_mode_t;
    
 // - declaration of extern public variables, ...deprecated: better using use _get/_set instead ------------------------
@@ -98,7 +100,13 @@ extern eOresult_t eo_motioncontrol_Tick(EOtheMotionController *p);
 
 extern eOresult_t eo_motioncontrol_Stop(EOtheMotionController *p);
 
+typedef enum 
+{   // put in here the types of motioncontrol can frames
 
+    eo_motcon_canframe_unknown = 255    
+} eOmotioncontroller_canframe_t;
+
+extern eOresult_t eo_motioncontrol_AcceptCANframe(EOtheMotionController *p, eOcanframe_t *frame, eOcanport_t port, eOmotioncontroller_canframe_t cftype);
 
 
 /** @}            

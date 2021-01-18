@@ -56,7 +56,132 @@
 
 #include "EOtheSTRAIN_hid.h"
 
+#if defined(EOTHESERVICES_disable_theSTRAIN)
 
+    // provide empty implementation, so that we dont need to change the caller of the API
+    
+    extern EOtheSTRAIN* eo_strain_Initialise(void) 
+    {   
+        return NULL; 
+    }
+
+    extern EOtheSTRAIN* eo_strain_GetHandle(void)   
+    { 
+        return NULL; 
+    }
+
+    extern eOmn_serv_state_t eo_strain_GetServiceState(EOtheSTRAIN *p) 
+    { 
+        return eomn_serv_state_notsupported; 
+    }
+    
+    // in some cases, we need to alert the pc104 that the board does not support this service
+    extern eOresult_t eo_strain_SendReport(EOtheSTRAIN *p)
+    {
+        static const char s_eobj_ownname[] = "EOtheSTRAIN";
+        eOerrmanDescriptor_t errdes = {};
+        errdes.code = eoerror_code_get(eoerror_category_Config, eoerror_value_CFG_strain_failed_notsupported);  
+        errdes.sourcedevice = eo_errman_sourcedevice_localboard;
+        errdes.sourceaddress = 0;
+        errdes.par16 = errdes.par64 = 0;
+        eo_errman_Error(eo_errman_GetHandle(), eo_errortype_error, NULL, s_eobj_ownname, &errdes);
+        return eores_OK;
+    }
+
+
+    extern eOresult_t eo_strain_Verify(EOtheSTRAIN *p, const eOmn_serv_configuration_t * servcfg, eOservice_onendofoperation_fun_t onverify, eObool_t activateafterverify)
+    {
+        // we alert the host that the verification of the service has failed
+        eo_service_hid_SynchServiceState(eo_services_GetHandle(), eomn_serv_category_strain, eomn_serv_state_failureofverify);
+        if(NULL != onverify)
+        {
+            onverify(p, eobool_false); 
+        } 
+        
+        // we tell that the reason is that this service is not supported
+        eo_strain_SendReport(NULL);
+               
+        return eores_NOK_generic;
+    }
+
+    extern eOresult_t eo_strain_Activate(EOtheSTRAIN *p, const eOmn_serv_configuration_t * servcfg)
+    {
+        eo_strain_SendReport(NULL);
+        return eores_NOK_generic;
+    }
+
+    extern eOresult_t eo_strain_Deactivate(EOtheSTRAIN *p)
+    {
+        return eores_NOK_generic;
+    }
+
+    extern eOresult_t eo_strain_Start(EOtheSTRAIN *p)
+    {
+        eo_strain_SendReport(NULL);
+        return eores_NOK_generic;
+    }
+
+    extern eOresult_t eo_strain_SetRegulars(EOtheSTRAIN *p, eOmn_serv_arrayof_id32_t* arrayofid32, uint8_t* numberofthem)
+    {
+        if(NULL != arrayofid32)
+        {
+            eo_strain_SendReport(NULL);
+        }
+        return eores_NOK_generic;
+    }
+
+    extern eOresult_t eo_strain_Tick(EOtheSTRAIN *p)
+    {
+        return eores_NOK_generic;
+    }
+
+    extern eOresult_t eo_strain_Stop(EOtheSTRAIN *p)
+    {
+        return eores_NOK_generic;
+    }
+
+//    extern eOresult_t eo_strain_Transmission(EOtheSTRAIN *p, eObool_t on)
+//    {
+//        return eores_NOK_generic;
+//    }
+    
+    extern eOresult_t eo_strain_AcceptCANframe(EOtheSTRAIN *p, eOcanframe_t *frame, eOcanport_t port, strainProcessMode_t mode)
+    {
+        return eores_NOK_generic;
+    }
+    
+    extern eOresult_t eo_strain_GetFullScale(EOtheSTRAIN *p, eOservice_onendofoperation_fun_t overrideonfullscaleready)
+    {
+        return eores_NOK_generic;
+    }
+    
+    extern eOresult_t eo_strain_Set(EOtheSTRAIN *p, eOas_strain_config_t *cfg)
+    {
+        return eores_NOK_generic;
+    }
+    
+    extern eOresult_t eo_strain_SetMode(EOtheSTRAIN *p, eOas_strainmode_t mode)
+    {
+        return eores_NOK_generic;
+    }
+    
+    extern eOresult_t eo_strain_SetDataRate(EOtheSTRAIN *p, uint8_t datarate)
+    {
+        return eores_NOK_generic;
+    }
+    
+    extern uint8_t eo_strain_GetDataRate(EOtheSTRAIN *p)
+    {
+        return 0;
+    }
+
+    extern eOresult_t eo_strain_notifymeOnNewReceivedData(EOtheSTRAIN *p)
+    {
+        return eores_NOK_generic;
+    }
+    
+#elif !defined(EOTHESERVICES_disable_theSTRAIN)
+    
 // --------------------------------------------------------------------------------------------------------------------
 // - #define with internal scope
 // --------------------------------------------------------------------------------------------------------------------
@@ -76,7 +201,10 @@
 // --------------------------------------------------------------------------------------------------------------------
 // - typedef with internal scope
 // --------------------------------------------------------------------------------------------------------------------
-// empty-section
+
+#if !defined(USE_OLD_BUGGY_MODE_TO_SEND_UP_FULLSCALE_WITH_INVERTED_BYTES)
+ #define USE_OLD_BUGGY_MODE_TO_SEND_UP_FULLSCALE_WITH_INVERTED_BYTES
+#endif
 
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -100,6 +228,16 @@ static eOresult_t s_eo_thestrain_on_fullscale_ready(EOtheSTRAIN* p, eObool_t ope
 static eObool_t s_eo_strain_isID32relevant(uint32_t id32);
 
 static void s_eo_strain_send_diagnostic_on_transmissioninterruption(void);
+
+static eOresult_t s_eocanprotASperiodic_parser_process_forcetorque(eOcanframe_t *frame, eOcanport_t port, strainProcessMode_t mode);
+
+static void s_eocanprotASperiodic_strain_saturation_handler(eOcanframe_t *frame, eOcanport_t port, strainProcessMode_t mode);
+
+static eOresult_t eo_strain_notifymeOnNewReceivedData(EOtheSTRAIN *p);
+
+void s_eo_strain_processfullscalecanframe(eOcanframe_t *frame, eOcanport_t port);
+
+static eObool_t s_eo_thestrain_apply_fullscale_value(uint8_t channel, uint16_t *value, eOas_strain_t* strain);
 
 // --------------------------------------------------------------------------------------------------------------------
 // - definition (and initialisation) of static variables
@@ -534,37 +672,61 @@ extern eOresult_t eo_strain_Tick(EOtheSTRAIN *p)
 
 
 
-extern eOresult_t eo_strain_Transmission(EOtheSTRAIN *p, eObool_t on)
+//extern eOresult_t eo_strain_Transmission(EOtheSTRAIN *p, eObool_t on)
+//{
+//    if(NULL == p)
+//    {
+//        return(eores_NOK_nullpointer);
+//    }
+//    
+//    if(eobool_false == p->service.active)
+//    {   // nothing to do because object must be first activated
+//        return(eores_OK);
+//    } 
+
+//    if(eobool_false == p->service.started)
+//    {   // not running, thus we do nothing
+//        return(eores_OK);
+//    }     
+//    
+//    // we force transmission
+//    if(eobool_true == on)
+//    {
+//        s_eo_strain_TXstart(p);
+//    }
+//    else
+//    {
+//        s_eo_strain_TXstop(p);
+//    }
+//    
+//    return(eores_OK);        
+//}
+
+extern eOresult_t eo_strain_AcceptCANframe(EOtheSTRAIN *p, eOcanframe_t *frame, eOcanport_t port, strainProcessMode_t mode)
 {
-    if(NULL == p)
+    if((NULL == p) || (NULL == frame))
     {
         return(eores_NOK_nullpointer);
     }
     
-    if(eobool_false == p->service.active)
-    {   // nothing to do because object must be first activated
-        return(eores_OK);
-    } 
-
-    if(eobool_false == p->service.started)
-    {   // not running, thus we do nothing
-        return(eores_OK);
-    }     
-    
-    // we force transmission
-    if(eobool_true == on)
-    {
-        s_eo_strain_TXstart(p);
+    if((processForce == mode) || (processTorque == mode))
+    {    
+        s_eocanprotASperiodic_parser_process_forcetorque(frame, port, mode);
     }
-    else
+    else if((processDebugForce == mode) || (processDebugTorque == mode))
     {
-        s_eo_strain_TXstop(p);
+        if(NULL != p->strain)
+        {
+            eo_array_Assign((EOarray*)(&p->strain->status.uncalibratedvalues), (processDebugForce == mode) ? 0 : 3, &(frame->data[0]), 3);
+        }        
+    }
+    else if(processFullScale == mode)
+    {
+        s_eo_strain_processfullscalecanframe(frame, port);
     }
     
-    return(eores_OK);        
+    return eores_OK;
 }
-
-
 
 extern eOresult_t eo_strain_Set(EOtheSTRAIN *p, eOas_strain_config_t *cfg)
 {
@@ -726,7 +888,7 @@ extern eOresult_t eo_strain_GetFullScale(EOtheSTRAIN *p, eOservice_onendofoperat
     return(eores_OK); 
 }
 
-extern eOresult_t eo_strain_notifymeOnNewReceivedData(EOtheSTRAIN *p)
+static eOresult_t eo_strain_notifymeOnNewReceivedData(EOtheSTRAIN *p)
 {
     if(NULL == p)
     {
@@ -796,7 +958,7 @@ extern void eoprot_fun_INIT_as_strain_status(const EOnv* nv)
 // value of the specified channel inside the relevant position of strain->status.fullscale.
 // in this function is implemented the chain of requests from channel 0 up to 5 with successive signalling to robotinterface
 // VERY IMPORTANT: the function must return eobool_true
-extern eObool_t eocanprotASpolling_redefinable_alert_reception_of_POL_AS_CMD__GET_FULL_SCALES(uint8_t channel, uint16_t *value, eOas_strain_t* strain)
+static eObool_t s_eo_thestrain_apply_fullscale_value(uint8_t channel, uint16_t *value, eOas_strain_t* strain)
 {
     const eObool_t ret = eobool_true;
     EOtheSTRAIN *p = eo_strain_GetHandle();
@@ -1149,6 +1311,249 @@ static void s_eo_strain_send_diagnostic_on_transmissioninterruption(void)
 #endif
 
 }
+
+static eOresult_t s_eocanprotASperiodic_parser_process_forcetorque(eOcanframe_t *frame, eOcanport_t port, strainProcessMode_t mode)
+{
+    // this can frame is from strain only ... i dont do the check that the board must be a strain
+    // i retrieve the strain entity related to the frame    
+    eOas_strain_t *strain = s_eo_thestrain.strain;
+    //eOprotIndex_t index = EOK_uint08dummy;
+    
+    //if(NULL == (strain = (eOas_strain_t*) s_eocanprotASperiodic_get_entity(eoprot_endpoint_analogsensors, eoprot_entity_as_strain, frame, port, &index)))
+    if(NULL == strain)
+    {
+        return(eores_OK);  
+    }    
+    
+    eObool_t update_watchdog = eobool_false;
+    
+    // set incoming force values
+    switch(strain->config.mode)
+    {
+        case eoas_strainmode_txcalibrateddatacontinuously:
+        case eoas_strainmode_txalldatacontinuously:
+        {
+            eo_array_Assign((EOarray*)(&strain->status.calibratedvalues), (processForce == mode) ? 0 : 3, &(frame->data[0]), 3);
+            update_watchdog = eobool_true;
+        } break;
+
+        case eoas_strainmode_txuncalibrateddatacontinuously:
+        {
+            eo_array_Assign((EOarray*)(&strain->status.uncalibratedvalues), (processForce == mode) ? 0 : 3, &(frame->data[0]), 3);
+            update_watchdog = eobool_true;
+        } break;
+        
+        case eoas_strainmode_acquirebutdonttx:
+        {
+            // i dont do anything in here. but i dont return nok. because it may be that we must empty a rx buffer of canframes rx just before
+            // that we have silenced the strain.
+        } break;
+        
+        default:
+        {
+            //i must never be here
+            //#warning -> TODO: add diagnostics about unknown mode as in s_eo_icubCanProto_mb_send_runtime_error_diagnostics()
+        }
+    }
+    
+    if(update_watchdog)
+    {
+        eo_strain_notifymeOnNewReceivedData(eo_strain_GetHandle());
+    }
+        
+    
+    //check saturation
+//#define SIMPLE_SATURATION_DIAGNOSTIC
+#if defined (SIMPLE_SATURATION_DIAGNOSTIC)
+    static uint16_t count_message = 0;
+    if (frame->size == 7)
+    {
+        //check 7th byte, which should include the saturation bit
+        if (frame->data[6] != 0x00)
+        //send dedicated diagnostics
+        {
+            if ((count_message == 0) || (count_message == 300)) //if it's the first time or every 300ms, if it's continuosly saturating
+            {              
+                eOerrmanDescriptor_t errdes = {0};
+                errdes.sourcedevice         = (eOcanport1 == port) ? (eo_errman_sourcedevice_canbus1) : (eo_errman_sourcedevice_canbus2);
+                errdes.sourceaddress        = EOCANPROT_FRAME_GET_SOURCE(frame);                
+                errdes.code                 = eoerror_code_get(eoerror_category_HardWare, eoerror_value_HW_strain_saturation);
+                errdes.par16                = frame->size;
+                errdes.par64                = eo_common_canframe_data2u64((eOcanframe_t*)frame);
+                eo_errman_Error(eo_errman_GetHandle(), eo_errortype_error, NULL, NULL, &errdes);
+            }
+            
+            if (count_message == 300)
+                count_message = 0;
+            
+            count_message++;
+        }
+    }
+    else
+    {
+       count_message = 0; 
+    }
+#else
+//    static uint16_t counter = 0;
+//    counter++;
+//    
+//    if (counter > 2000) // stays for 1 second...
+//        counter = 0;
+   
+    s_eocanprotASperiodic_strain_saturation_handler(frame, port, mode);
+#endif
+    
+    return(eores_OK);
+}
+
+
+static void s_eocanprotASperiodic_strain_saturation_handler(eOcanframe_t *frame, eOcanport_t port, strainProcessMode_t mode)
+{
+    static uint16_t upper_saturations[6] = {0};
+    static uint16_t lower_saturations[6] = {0};
+    
+    static uint32_t counter = 0;
+    
+    counter ++;
+    
+    uint8_t strainTXrate = eo_strain_GetDataRate(eo_strain_GetHandle()); // in ms. get it from strain object ....
+    uint32_t numberofmessagesin1second = 2000*strainTXrate; // strai sends 2 msgs (1 for force and 1 for torque) every strainTXrate milli.
+    
+    //there's saturation
+    if (frame->size == 7)
+    {
+        uint8_t info = frame->data[6]; //byte containing info about saturation
+    
+        if (info != 0)
+        {
+            switch (mode)
+            {
+                case processForce:
+                {
+                    icubCanProto_strain_forceSaturationInfo_t* force_info = (icubCanProto_strain_forceSaturationInfo_t*) &info; 
+                    
+                    if (force_info->saturationInChannel_0 == saturationLOW)
+                        lower_saturations[0]++;
+                    else if (force_info->saturationInChannel_0 == saturationHIGH)
+                        upper_saturations[0]++;
+            
+                    if (force_info->saturationInChannel_1 == saturationLOW)
+                        lower_saturations[1]++;
+                    else if (force_info->saturationInChannel_1 == saturationHIGH)
+                        upper_saturations[1]++;
+                   
+                    if (force_info->saturationInChannel_2 == saturationLOW)
+                         lower_saturations[2]++;
+                    else if (force_info->saturationInChannel_2 == saturationHIGH)
+                         upper_saturations[2]++;            
+                } break;                 
+                case processTorque:
+                {
+                    icubCanProto_strain_torqueSaturationInfo_t* torque_info = (icubCanProto_strain_torqueSaturationInfo_t*) &info;
+                 
+                    if (torque_info->saturationInChannel_3 == saturationLOW)
+                        lower_saturations[3]++;
+                    else if (torque_info->saturationInChannel_3 == saturationHIGH)
+                        upper_saturations[3]++;
+                    
+                    if (torque_info->saturationInChannel_4 == saturationLOW)
+                        lower_saturations[4]++;
+                    else if (torque_info->saturationInChannel_4 == saturationHIGH)
+                        upper_saturations[4]++;
+                    
+                    if (torque_info->saturationInChannel_5 == saturationLOW)
+                        lower_saturations[5]++;
+                    else if (torque_info->saturationInChannel_5 == saturationHIGH)
+                        upper_saturations[5]++;
+                } break;  
+                
+                default:
+                {                   
+                } break;                
+            }
+            
+
+        }
+        else
+        {
+            // send diag message about malformed message
+            // uncomment if you need it for debugging
+            /*
+            eOerrmanDescriptor_t errdes = {0};
+            errdes.sourcedevice         = (eOcanport1 == port) ? (eo_errman_sourcedevice_canbus1) : (eo_errman_sourcedevice_canbus2);
+            errdes.sourceaddress        = EOCANPROT_FRAME_GET_SOURCE(frame);                
+            errdes.code                 = eoerror_code_get(eoerror_category_Debug, eoerror_value_DEB_tag01);
+            errdes.par16                = 0;
+            errdes.par64                = 0;
+            eo_errman_Error(eo_errman_GetHandle(), eo_errortype_debug, "strain saturation byte 7 (if sent) should be different from 0!", NULL, &errdes);
+            */
+        }    
+    
+    }
+    
+ 
+    if((numberofmessagesin1second > 0) && (counter >= numberofmessagesin1second))
+    {   // ok, 1 second has expired (or better: so many messages have arrived for 1 second). 
+            
+        // reset counter    
+        counter = 0;
+            
+        // send saturation message for every channel, if any
+        for(uint8_t i = 0; i < 6; i++)
+        {
+            eOerrmanDescriptor_t errdes = {0};
+            if (upper_saturations[i] != 0 || lower_saturations[i] != 0)
+            {
+                errdes.sourcedevice         = (eOcanport1 == port) ? (eo_errman_sourcedevice_canbus1) : (eo_errman_sourcedevice_canbus2);
+                errdes.sourceaddress        = EOCANPROT_FRAME_GET_SOURCE(frame);                
+                errdes.code                 = eoerror_code_get(eoerror_category_HardWare, eoerror_value_HW_strain_saturation);
+                errdes.par16                = i; //channel involved
+                errdes.par64                = (uint64_t) (upper_saturations[i]) << 32 | (uint64_t) lower_saturations[i]; //LSW->lower_sat, MSW->upper_sat
+                eo_errman_Error(eo_errman_GetHandle(), eo_errortype_error, NULL, NULL, &errdes);
+                
+                upper_saturations[i] = 0;
+                lower_saturations[i] = 0;
+            }
+         }                     
+    }
+}
+
+
+void s_eo_strain_processfullscalecanframe(eOcanframe_t *frame, eOcanport_t port)
+{
+    // get the strain
+    eOas_strain_t *strain = s_eo_thestrain.strain;
+    eOprotIndex_t index = EOK_uint08dummy;
+    
+    //if(NULL == (strain = (eOas_strain_t*) s_eocanprotASpolling_get_entity(eoprot_endpoint_analogsensors, eoprot_entity_as_strain, frame, port, &index)))
+    if(NULL == strain)
+    {
+        return;  
+    }    
+    
+    // now i get the channel and the data to be put inside the strain.
+    uint8_t channel = frame->data[1];
+#if defined(USE_OLD_BUGGY_MODE_TO_SEND_UP_FULLSCALE_WITH_INVERTED_BYTES)    
+    uint16_t *data = (uint16_t *)&(frame->data[2]);
+#else
+    // MSB is in data[2], LSB in data[3]
+    uint16_t value = (uint16_t)(frame->data[3]) + (uint16_t)(frame->data[2] << 8);
+    uint16_t *data = &value;
+#endif    
+    // i put data into the array at the specified location. the check vs channel being lower than capacity 6 of array is done inside
+    EOarray* array = (EOarray*)&strain->status.fullscale;
+    eo_array_Assign(array, channel, data, 1);
+    
+    // ok ... done the basic stuff. i have put inside the array the data it arrives in the correct position.
+    
+    // now we alert someone that the message has arrived for the given channel. 
+    s_eo_thestrain_apply_fullscale_value(channel, data, strain);
+
+}
+
+
+#endif // #elif !defined(EOTHESERVICES_disable_theSTRAIN)
+
 // --------------------------------------------------------------------------------------------------------------------
 // - end-of-file (leave a blank line after)
 // --------------------------------------------------------------------------------------------------------------------

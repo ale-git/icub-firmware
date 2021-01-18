@@ -54,7 +54,6 @@ extern "C" {
 typedef struct EOtheSTRAIN_hid EOtheSTRAIN;
 
 
-
 //typedef eOresult_t (*eOstrain_onendofoperation_fun_t) (EOtheSTRAIN* p, eObool_t operationisok);
    
 // - declaration of extern public variables, ...deprecated: better using use _get/_set instead ------------------------
@@ -86,9 +85,18 @@ extern eOresult_t eo_strain_Tick(EOtheSTRAIN *p);
 
 extern eOresult_t eo_strain_Stop(EOtheSTRAIN *p);
 
-// it enables/disables transmission of the strain board. _Start() just starts the service, not the transmission
-extern eOresult_t eo_strain_Transmission(EOtheSTRAIN *p, eObool_t on);
 
+typedef enum 
+{
+    processForce        = 0,    
+    processTorque       = 1,    
+    processDebugForce   = 2,
+    processDebugTorque  = 3,
+    processFullScale    = 4
+} strainProcessMode_t;
+
+// called by the callbacks of can protocol
+extern eOresult_t eo_strain_AcceptCANframe(EOtheSTRAIN *p, eOcanframe_t *frame, eOcanport_t port, strainProcessMode_t mode);
 
 // we can call them if _Activate() was called. they are used by the callbacks of eth protocol
 extern eOresult_t eo_strain_GetFullScale(EOtheSTRAIN *p, eOservice_onendofoperation_fun_t overrideonfullscaleready);
@@ -97,7 +105,6 @@ extern eOresult_t eo_strain_SetMode(EOtheSTRAIN *p, eOas_strainmode_t mode);
 extern eOresult_t eo_strain_SetDataRate(EOtheSTRAIN *p, uint8_t datarate);
 extern uint8_t eo_strain_GetDataRate(EOtheSTRAIN *p);
 
-extern eOresult_t eo_strain_notifymeOnNewReceivedData(EOtheSTRAIN *p);
 
 
 /** @}            

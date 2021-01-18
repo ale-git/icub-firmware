@@ -159,6 +159,30 @@ namespace embot { namespace hw { namespace i2c {
                 
         return resOK;
     }
+           
+    
+    bool discover(embot::hw::I2C b, std::vector<ADR> &adrs)
+    {
+        if(false == initialised(b))
+        {
+            return false;    
+        }
+                      
+        adrs.clear();
+        
+        static const uint8_t start = 2;
+        for(int i=start; i<256; i++)
+        {
+            if((i%2) == 1) { continue; }
+            
+            if(true == ping(b, i, 3*embot::core::time1millisec))
+            {
+                adrs.push_back(i);
+            }
+        } 
+
+        return !adrs.empty();        
+    }
     
     
     // -
@@ -560,25 +584,16 @@ namespace embot { namespace hw { namespace i2c {
 // functions required by the hal of stm32. they are called by the hw at the completion of a tx or rx transaction
     
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *I2cHandle)
-{    
-    std::uint8_t index = 0;
+{        
+    embot::hw::I2C id = embot::hw::i2c::getBSP().toID({I2cHandle, embot::hw::i2c::Speed::none});
     
-    if(I2cHandle->Instance == I2C1)
-    {
-        index = 0;
-    }
-    else if(I2cHandle->Instance == I2C2)
-    {
-        index = 1;
-    }
-    else if(I2cHandle->Instance == I2C3)
-    {
-        index = 2;
-    }
-    else
+    if(embot::hw::I2C::none == id)
     {
         return;
     }
+    
+    std::uint8_t index = embot::core::tointegral(id);
+    
                
     if(false == embot::hw::i2c::s_privatedata.transaction[index].recdata.isvalid())
     {
@@ -601,24 +616,14 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *I2cHandle)
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *I2cHandle)
 {
-    std::uint8_t index = 0;
+    embot::hw::I2C id = embot::hw::i2c::getBSP().toID({I2cHandle, embot::hw::i2c::Speed::none});
     
-    if(I2cHandle->Instance == I2C1)
-    {
-       index = 0;
-    }
-    else if(I2cHandle->Instance == I2C2)
-    {
-       index = 1;
-    }
-    else if(I2cHandle->Instance == I2C3)
-    {
-        index = 2;
-    }
-    else
+    if(embot::hw::I2C::none == id)
     {
         return;
     }
+    
+    std::uint8_t index = embot::core::tointegral(id);
     
     embot::hw::i2c::ontransactionterminated(index);        
 }    

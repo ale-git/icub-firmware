@@ -39,6 +39,7 @@
 #include "EOtheInertials3.h"
 #include "EOtheTemperatures.h"
 #include "EOthePSC.h"
+#include "EOthePOS.h"
 
 #include "EOtheETHmonitor.h"
 
@@ -57,6 +58,8 @@
 #include "EOtheSharedHW.h"
 
 #include "testRTC.h"
+
+#include "EOtheMemoryPool.h"
 
 // --------------------------------------------------------------------------------------------------------------------
 // - declaration of extern public interface
@@ -125,6 +128,7 @@ static eOresult_t s_services_callback_afterverify_inertial(EOaService* p, eObool
 static eOresult_t s_services_callback_afterverify_inertials3(EOaService* p, eObool_t operationisok);
 static eOresult_t s_services_callback_afterverify_temperatures(EOaService* p, eObool_t operationisok);
 static eOresult_t s_services_callback_afterverify_psc(EOaService* p, eObool_t operationisok);
+static eOresult_t s_services_callback_afterverify_pos(EOaService* p, eObool_t operationisok);
 static eOresult_t s_services_callback_afterverify_motioncontrol(EOaService* p, eObool_t operationisok);
 static eOresult_t s_eo_services_alert_afterverify_service(eObool_t operationisok, eOmn_serv_category_t category, eOmn_serv_type_t type, eOservice_type_t servtype);
 
@@ -282,6 +286,11 @@ extern eOmn_serv_state_t eo_service_GetState(EOtheServices *p, eOmn_serv_categor
             state = eo_psc_GetServiceState(eo_psc_GetHandle());   
         } break;
         
+        case eomn_serv_category_pos:
+        {
+            state = eo_pos_GetServiceState(eo_pos_GetHandle());   
+        } break;        
+        
         case eomn_serv_category_skin:
         {
             state = eo_skin_GetServiceState(eo_skin_GetHandle());
@@ -312,7 +321,7 @@ extern eOresult_t eo_services_ProcessCommand(EOtheServices *p, eOmn_service_cmmn
     eOmn_serv_category_t category = (eOmn_serv_category_t)command->category;
     const eOmn_serv_configuration_t *config = &command->parameter.configuration;
     eOmn_serv_arrayof_id32_t *arrayofid32 = &command->parameter.arrayofid32;
-        
+    
     switch(operation)
     {
         case eomn_serv_operation_verifyactivate:
@@ -618,6 +627,7 @@ static void s_eo_services_initialise(EOtheServices *p)
         eo_inertials3_Initialise(); 
         eo_temperatures_Initialise(); 
         eo_psc_Initialise();
+        eo_pos_Initialise();
     }
     
     {   // C.  can services and discovery.
@@ -661,6 +671,17 @@ static void s_eo_services_initialise(EOtheServices *p)
     errdes.par16            = 0x0000;
     errdes.par64            = 0;
     eo_errman_Error(eo_errman_GetHandle(), eo_errortype_info, NULL, s_eobj_ownname, &errdes);     
+ 
+#if 0
+    // reading of how much memory we have used so far    
+    volatile uint32_t stop = 0;
+    stop = eo_mempool_SizeOfAllocated(eo_mempool_GetHandle());
+    char strr[128] = {0};
+    snprintf(strr, sizeof(strr), "mempool has used %d bytes", stop);
+    eo_errman_Trace(eo_errman_GetHandle(), strr, s_eobj_ownname);
+    
+    stop = stop;
+#endif    
 }
 
 
@@ -738,6 +759,19 @@ static eOresult_t s_services_callback_afterverify_psc(EOaService* p, eObool_t op
     }
     
     s_eo_services_alert_afterverify_service(operationisok, eomn_serv_category_psc, eomn_serv_AS_psc, eo_service_psc);
+       
+    return(eores_OK);
+}
+
+static eOresult_t s_services_callback_afterverify_pos(EOaService* p, eObool_t operationisok)
+{
+    if(eobool_false == operationisok)
+    {
+        eo_pos_SendReport(eo_pos_GetHandle());
+        eo_pos_Deactivate(eo_pos_GetHandle());
+    }
+    
+    s_eo_services_alert_afterverify_service(operationisok, eomn_serv_category_pos, eomn_serv_AS_pos, eo_service_pos);
        
     return(eores_OK);
 }
@@ -837,6 +871,7 @@ static eOresult_t s_eo_services_process_verifyactivate(EOtheServices *p, eOmn_se
                 errorDescriptor.code = eoerror_code_get(eoerror_category_Config, eoerror_value_CFG_inertials_using_onboard_config);
                 eo_errman_Error(eo_errman_GetHandle(), eo_errortype_info, NULL, s_eobj_ownname, &errorDescriptor);                    
             }
+            #warning mettere un risultato ko in modo da avvisare
             eo_inertials2_Verify(eo_inertials2_GetHandle(), config, s_services_callback_afterverify_inertial, eobool_true);            
         } break; 
         
@@ -878,6 +913,18 @@ static eOresult_t s_eo_services_process_verifyactivate(EOtheServices *p, eOmn_se
             }
             eo_psc_Verify(eo_psc_GetHandle(), config, s_services_callback_afterverify_psc, eobool_true);            
         } break;         
+ 
+        case eomn_serv_category_pos:
+        {
+            if(eobool_true == uselocalconfig)
+            {
+                config = NULL;
+                
+                errorDescriptor.code = eoerror_code_get(eoerror_category_Config, eoerror_value_CFG_pos_using_onboard_config);
+                eo_errman_Error(eo_errman_GetHandle(), eo_errortype_info, NULL, s_eobj_ownname, &errorDescriptor);                    
+            }
+            eo_pos_Verify(eo_pos_GetHandle(), config, s_services_callback_afterverify_pos, eobool_true);            
+        } break;       
         
         case eomn_serv_category_strain: 
         {
@@ -1128,6 +1175,11 @@ static eOresult_t s_eo_services_process_regsig(EOtheServices *p, eOmn_serv_categ
         {
             res = eo_psc_SetRegulars(eo_psc_GetHandle(), arrayofid32, &number);
         } break;
+
+        case eomn_serv_category_pos:
+        {
+            res = eo_pos_SetRegulars(eo_pos_GetHandle(), arrayofid32, &number);
+        } break;
         
         default:
         {
@@ -1218,6 +1270,11 @@ static eOresult_t s_eo_services_start(EOtheServices *p, eOmn_serv_category_t cat
         case eomn_serv_category_psc:
         {
             res = eo_psc_Start(eo_psc_GetHandle());
+        } break; 
+
+        case eomn_serv_category_pos:
+        {
+            res = eo_pos_Start(eo_pos_GetHandle());
         } break; 
         
         default:
@@ -1335,6 +1392,17 @@ static eOresult_t s_eo_services_stop(EOtheServices *p, eOmn_serv_category_t cate
             }
         } break;        
 
+        case eomn_serv_category_pos:
+        {
+            res = eo_pos_Stop(eo_pos_GetHandle());
+            eo_pos_SetRegulars(eo_pos_GetHandle(), NULL, numofregulars);
+            p->running[eomn_serv_category_pos] = eobool_false;
+            if(eobool_true == and_deactivate)
+            {
+                eo_pos_Deactivate(eo_pos_GetHandle());
+            }
+        } break;   
+        
         case eomn_serv_category_all:
         {
             eo_motioncontrol_Stop(eo_motioncontrol_GetHandle()); 
@@ -1399,6 +1467,14 @@ static eOresult_t s_eo_services_stop(EOtheServices *p, eOmn_serv_category_t cate
             if(eobool_true == and_deactivate)
             {            
                 eo_psc_Deactivate(eo_psc_GetHandle());  
+            } 
+            
+            eo_pos_Stop(eo_pos_GetHandle());
+            eo_pos_SetRegulars(eo_pos_GetHandle(), NULL, NULL);  
+            p->running[eomn_serv_category_pos] = eobool_false;
+            if(eobool_true == and_deactivate)
+            {            
+                eo_pos_Deactivate(eo_pos_GetHandle());  
             } 
             
             // if i dont use the service command to load the rop, then it is safe to remove all rops anyway.

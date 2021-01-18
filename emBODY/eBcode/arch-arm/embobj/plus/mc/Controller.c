@@ -545,6 +545,12 @@ void MController_config_board(const eOmn_serv_configuration_t* brd_cfg)
             o->actuation_type = HARDWARE_MC4p; 
             jomoCouplingInfo = &(brd_cfg->data.mc.mc2pluspsc.jomocoupling);            
             break;
+        case eomn_serv_MC_mc4plusfaps:
+            carray = eo_constarray_Load((EOarray*)&brd_cfg->data.mc.mc4plusfaps.arrayofjomodescriptors);
+            o->nSets = o->nEncods = o->nJoints = brd_cfg->data.mc.mc4plusfaps.arrayofjomodescriptors.head.size; 
+            o->actuation_type = HARDWARE_MC4p; 
+            jomoCouplingInfo = &(brd_cfg->data.mc.mc4plusfaps.jomocoupling);            
+            break;
         
         default:
             return;
@@ -584,7 +590,9 @@ void MController_config_board(const eOmn_serv_configuration_t* brd_cfg)
                 }
                 break;
             }  
-            
+ 
+            // marco.accame on 16 dec 2020: i assume eomc_enc_pos is similar to aea because the encoder is absolute and has only one component 
+            case eomc_enc_pos:
             case eomc_enc_aea:
             {
                 o->absEncoder[k].type = eomc_enc_aea;

@@ -18,7 +18,7 @@ constexpr embot::app::theCANboardInfo::applicationInfo applInfo
     embot::prot::can::versionOfAPPLICATION {20, 4, 5},    
     embot::prot::can::versionOfCANPROTOCOL {20, 0} 
 #else    
-    embot::prot::can::versionOfAPPLICATION {1, 4, 5},    
+    embot::prot::can::versionOfAPPLICATION {1, 4, 6},    
     embot::prot::can::versionOfCANPROTOCOL {2, 0} 
 #endif    
 };
@@ -94,15 +94,12 @@ int main(void)
 #include "embot_hw_bno055.h"
 
 namespace embot { namespace hw { namespace bsp { namespace mtb4 {
-    
-    constexpr embot::hw::i2c::Descriptor descrI2Cone = embot::hw::i2c::Descriptor(embot::hw::I2C::one, 400000);
-    constexpr embot::hw::i2c::Descriptor descrI2Ctwo = embot::hw::i2c::Descriptor(embot::hw::I2C::two, 400000);
-    
+        
     constexpr embot::hw::SI7051 thermometer = embot::hw::SI7051::one;
-    constexpr embot::hw::si7051::Config thermometerconfig = embot::hw::si7051::Config(descrI2Cone);
+    constexpr embot::hw::si7051::Config thermometerconfig = {};
    
     constexpr embot::hw::BNO055 imuBOSCH = embot::hw::BNO055::one;
-    constexpr embot::hw::bno055::Config imuBOSCHconfig = embot::hw::bno055::Config(descrI2Ctwo);   
+    constexpr embot::hw::bno055::Config imuBOSCHconfig = {};   
              
 }}}} // namespace embot { namespace hw { namespace bsp { namespace mtb4 {
 
