@@ -17,7 +17,6 @@
 */
 
 #include "Calibrators.h"
-#include "JointSet.h"
 #include "CalibrationHelperData.h"
 #include "hal_adc.h"
 

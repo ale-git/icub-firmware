@@ -1222,7 +1222,7 @@ static void s_eom_emsrunner_update_diagnosticsinfo_check_overflows2(eOemsrunner_
             
 //            snprintf(strtime, sizeof(strtime), "RX %d us", (int)currduration); 
 //            eo_errman_Trace(eo_errman_GetHandle(), strtime, s_eobj_ownname);
-            
+            /*
 			if(eobool_true == s_theemsrunner.cycletiming.tasktiming[taskid].isoverflown)
 			{
 				errdes.code             = eoerror_code_get(eoerror_category_System, errorvalue[taskid]);
@@ -1230,7 +1230,7 @@ static void s_eom_emsrunner_update_diagnosticsinfo_check_overflows2(eOemsrunner_
                 errdes.par64            = last4durations; 
 				eo_errman_Error(eo_errman_GetHandle(), errortype, NULL, s_eobj_ownname, &errdes);
 			}
-
+            */
         } break;
             
 		case eo_emsrunner_taskid_runDO:
@@ -1261,6 +1261,7 @@ static void s_eom_emsrunner_update_diagnosticsinfo_check_overflows2(eOemsrunner_
 //            snprintf(strtime, sizeof(strtime), "TX %d us", (int)currduration); 
 //            eo_errman_Trace(eo_errman_GetHandle(), strtime, s_eobj_ownname);
             
+            /*
 			if(eobool_true == s_theemsrunner.cycletiming.tasktiming[taskid].isoverflown)
 			{
 				errdes.code             = eoerror_code_get(eoerror_category_System, errorvalue[taskid]);
@@ -1269,7 +1270,7 @@ static void s_eom_emsrunner_update_diagnosticsinfo_check_overflows2(eOemsrunner_
                 errdes.par64            = (last4durations & 0x0000ffffffffffff) | (canframes << 48); 
 				eo_errman_Error(eo_errman_GetHandle(), errortype, NULL, s_eobj_ownname, &errdes);
 			}
-          
+            */
         } break;
 	}
     

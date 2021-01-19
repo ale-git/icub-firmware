@@ -19,9 +19,11 @@
 #ifndef MC_JOINT_SET___
 #define MC_JOINT_SET___
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "wrist_decoupler.h"
+
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include "EoCommon.h"
 
@@ -91,9 +93,25 @@ typedef struct // JointSet
     eOmc_calibration_type_t calibration_in_progress;
     
     int32_t calibration_timeout;
-    
+     
     TripodCalib tripod_calib;
-
+    
+    ////////////////////////////////////////////////
+    
+    BOOL is_parking;
+    BOOL first_run;
+    
+    wrist_decouplerModelClass wrist_decoupler;
+    
+    Trajectory ypr_trajectory[3];
+    
+    CTRL_UNITS ypr_pos_ref[3];
+    CTRL_UNITS ypr_vel_ref[3];
+    CTRL_UNITS ypr_acc_ref[3];
+    CTRL_UNITS ypr_pos_fbk[3];
+    
+    CTRL_UNITS arm_pos_off[3];
+    
 } JointSet;
 
 extern JointSet* JointSet_new(uint8_t n); //
@@ -130,11 +148,18 @@ extern void JointSet_calibrate(JointSet* o, uint8_t e, eOmc_calibrator_t *calibr
 
 extern void JointSet_do_pwm_control(JointSet* o);
     
-extern void JointSet_send_debug_message(char *message, uint8_t jid, uint16_t par16, uint32_t par64);
+extern void JointSet_send_debug_message(char *message, uint8_t jid, uint16_t par16, uint64_t par64);
+    
+extern BOOL JointSet_set_pos_ref(JointSet* o, int j, CTRL_UNITS pos_ref, CTRL_UNITS vel_ref);
+extern void JointSet_get_state(JointSet* o, int j, eOmc_joint_status_t* joint_state);
+extern void JointSet_stop(JointSet* o, int j);
+    
+//extern void JointSet_start_park(JointSet* o);
+//extern void JointSet_stop_park(JointSet* o);
 
-#ifdef __cplusplus
-}       // closing brace for extern "C"
-#endif 
+//#ifdef __cplusplus
+//}       // closing brace for extern "C"
+//#endif 
  
 #endif  // include-guard
 

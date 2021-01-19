@@ -10,7 +10,7 @@
       <TargetName>ems4rd</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>6150000::V6.15::ARMCLANG</pCCUsed>
+      <pCCUsed>6140001::V6.14.1::ARMCLANG</pCCUsed>
       <uAC6>1</uAC6>
       <TargetOption>
         <TargetCommonOption>
@@ -313,7 +313,7 @@
           </ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>6</Optim>
+            <Optim>5</Optim>
             <oTime>1</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>1</OneElfS>
@@ -785,7 +785,7 @@
             </File>
             <File>
               <FileName>overridden_controller.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\cfg\eoemsappl\overridden_controller.c</FilePath>
             </File>
             <File>
@@ -850,12 +850,12 @@
             </File>
             <File>
               <FileName>EOtheMotionController.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOtheMotionController.c</FilePath>
             </File>
             <File>
               <FileName>EOtheEncoderReader.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOtheEncoderReader.c</FilePath>
             </File>
             <File>
@@ -865,7 +865,7 @@
             </File>
             <File>
               <FileName>EOCurrentsWatchdog.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOCurrentsWatchdog.c</FilePath>
             </File>
             <File>
@@ -984,7 +984,7 @@
           <Files>
             <File>
               <FileName>Calibrators.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\mc\Calibrators.c</FilePath>
             </File>
             <File>
@@ -994,7 +994,7 @@
             </File>
             <File>
               <FileName>Controller.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\mc\Controller.c</FilePath>
             </File>
             <File>
@@ -1004,7 +1004,7 @@
             </File>
             <File>
               <FileName>JointSet.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\mc\JointSet.c</FilePath>
             </File>
             <File>
@@ -1026,6 +1026,118 @@
               <FileName>WatchDog.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\mc\WatchDog.c</FilePath>
+            </File>
+            <File>
+              <FileName>wrist_decoupler.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\wrist_decoupler.cpp</FilePath>
+              <FileOption>
+                <CommonProperty>
+                  <UseCPPCompiler>2</UseCPPCompiler>
+                  <RVCTCodeConst>0</RVCTCodeConst>
+                  <RVCTZI>0</RVCTZI>
+                  <RVCTOtherData>0</RVCTOtherData>
+                  <ModuleSelection>0</ModuleSelection>
+                  <IncludeInBuild>1</IncludeInBuild>
+                  <AlwaysBuild>2</AlwaysBuild>
+                  <GenerateAssemblyFile>2</GenerateAssemblyFile>
+                  <AssembleAssemblyFile>2</AssembleAssemblyFile>
+                  <PublicsOnly>2</PublicsOnly>
+                  <StopOnExitCode>11</StopOnExitCode>
+                  <CustomArgument></CustomArgument>
+                  <IncludeLibraryModules></IncludeLibraryModules>
+                  <ComprImg>1</ComprImg>
+                </CommonProperty>
+                <FileArmAds>
+                  <Cads>
+                    <interw>2</interw>
+                    <Optim>0</Optim>
+                    <oTime>2</oTime>
+                    <SplitLS>2</SplitLS>
+                    <OneElfS>2</OneElfS>
+                    <Strict>2</Strict>
+                    <EnumInt>2</EnumInt>
+                    <PlainCh>2</PlainCh>
+                    <Ropi>2</Ropi>
+                    <Rwpi>2</Rwpi>
+                    <wLevel>0</wLevel>
+                    <uThumb>2</uThumb>
+                    <uSurpInc>2</uSurpInc>
+                    <uC99>2</uC99>
+                    <uGnu>2</uGnu>
+                    <useXO>2</useXO>
+                    <v6Lang>0</v6Lang>
+                    <v6LangP>0</v6LangP>
+                    <vShortEn>2</vShortEn>
+                    <vShortWch>2</vShortWch>
+                    <v6Lto>2</v6Lto>
+                    <v6WtE>2</v6WtE>
+                    <v6Rtti>2</v6Rtti>
+                    <VariousControls>
+                      <MiscControls></MiscControls>
+                      <Define></Define>
+                      <Undefine></Undefine>
+                      <IncludePath></IncludePath>
+                    </VariousControls>
+                  </Cads>
+                </FileArmAds>
+              </FileOption>
+            </File>
+            <File>
+              <FileName>wrist_decoupler_data.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\wrist_decoupler_data.cpp</FilePath>
+              <FileOption>
+                <CommonProperty>
+                  <UseCPPCompiler>2</UseCPPCompiler>
+                  <RVCTCodeConst>0</RVCTCodeConst>
+                  <RVCTZI>0</RVCTZI>
+                  <RVCTOtherData>0</RVCTOtherData>
+                  <ModuleSelection>0</ModuleSelection>
+                  <IncludeInBuild>1</IncludeInBuild>
+                  <AlwaysBuild>2</AlwaysBuild>
+                  <GenerateAssemblyFile>2</GenerateAssemblyFile>
+                  <AssembleAssemblyFile>2</AssembleAssemblyFile>
+                  <PublicsOnly>2</PublicsOnly>
+                  <StopOnExitCode>11</StopOnExitCode>
+                  <CustomArgument></CustomArgument>
+                  <IncludeLibraryModules></IncludeLibraryModules>
+                  <ComprImg>1</ComprImg>
+                </CommonProperty>
+                <FileArmAds>
+                  <Cads>
+                    <interw>2</interw>
+                    <Optim>0</Optim>
+                    <oTime>2</oTime>
+                    <SplitLS>2</SplitLS>
+                    <OneElfS>2</OneElfS>
+                    <Strict>2</Strict>
+                    <EnumInt>2</EnumInt>
+                    <PlainCh>2</PlainCh>
+                    <Ropi>2</Ropi>
+                    <Rwpi>2</Rwpi>
+                    <wLevel>0</wLevel>
+                    <uThumb>2</uThumb>
+                    <uSurpInc>2</uSurpInc>
+                    <uC99>2</uC99>
+                    <uGnu>2</uGnu>
+                    <useXO>2</useXO>
+                    <v6Lang>0</v6Lang>
+                    <v6LangP>0</v6LangP>
+                    <vShortEn>2</vShortEn>
+                    <vShortWch>2</vShortWch>
+                    <v6Lto>2</v6Lto>
+                    <v6WtE>2</v6WtE>
+                    <v6Rtti>2</v6Rtti>
+                    <VariousControls>
+                      <MiscControls></MiscControls>
+                      <Define></Define>
+                      <Undefine></Undefine>
+                      <IncludePath></IncludePath>
+                    </VariousControls>
+                  </Cads>
+                </FileArmAds>
+              </FileOption>
             </File>
           </Files>
         </Group>
@@ -1214,7 +1326,7 @@
             </File>
             <File>
               <FileName>EoProtocolMC_fun_ems4rd.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\cfg\eoprot-callbacks\EoProtocolMC_fun_ems4rd.c</FilePath>
             </File>
           </Files>
@@ -1254,7 +1366,7 @@
             </File>
             <File>
               <FileName>EoCANprotMCperiodic.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\can\config-can-protocol\EoCANprotMCperiodic.c</FilePath>
             </File>
             <File>
@@ -2194,7 +2306,7 @@
             </File>
             <File>
               <FileName>overridden_controller.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\cfg\eoemsappl\overridden_controller.c</FilePath>
             </File>
             <File>
@@ -2259,12 +2371,12 @@
             </File>
             <File>
               <FileName>EOtheMotionController.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOtheMotionController.c</FilePath>
             </File>
             <File>
               <FileName>EOtheEncoderReader.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOtheEncoderReader.c</FilePath>
             </File>
             <File>
@@ -2274,7 +2386,7 @@
             </File>
             <File>
               <FileName>EOCurrentsWatchdog.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOCurrentsWatchdog.c</FilePath>
             </File>
             <File>
@@ -2324,7 +2436,7 @@
           <Files>
             <File>
               <FileName>Calibrators.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\mc\Calibrators.c</FilePath>
             </File>
             <File>
@@ -2334,7 +2446,7 @@
             </File>
             <File>
               <FileName>Controller.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\mc\Controller.c</FilePath>
             </File>
             <File>
@@ -2344,7 +2456,7 @@
             </File>
             <File>
               <FileName>JointSet.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\mc\JointSet.c</FilePath>
             </File>
             <File>
@@ -2366,6 +2478,16 @@
               <FileName>WatchDog.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\mc\WatchDog.c</FilePath>
+            </File>
+            <File>
+              <FileName>wrist_decoupler.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\wrist_decoupler.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>wrist_decoupler_data.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\wrist_decoupler_data.cpp</FilePath>
             </File>
           </Files>
         </Group>
@@ -2554,7 +2676,7 @@
             </File>
             <File>
               <FileName>EoProtocolMC_fun_ems4rd.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\cfg\eoprot-callbacks\EoProtocolMC_fun_ems4rd.c</FilePath>
             </File>
           </Files>
@@ -2594,7 +2716,7 @@
             </File>
             <File>
               <FileName>EoCANprotMCperiodic.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\can\config-can-protocol\EoCANprotMCperiodic.c</FilePath>
             </File>
             <File>
