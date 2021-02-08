@@ -863,6 +863,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     }
     else // current open loop
     {
+        /*
         if (I2Tdata.IQMeasured > Ipeak)
         {
             limit =  1;
@@ -871,7 +872,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
         {
             limit = -1;
         }
-
+        */
         if (limit)
         {
             if (limit == 1)
