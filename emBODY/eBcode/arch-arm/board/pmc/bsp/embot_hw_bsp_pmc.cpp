@@ -113,7 +113,9 @@ void i2c_address_assignment_to_tlv493d_chips()
     // 3. init the sda-i2c1 PB9 and sda-i2c2 PA8
     // ...
     
+#if defined(EMBOT_ENABLE_hw_tlv493d_U27off) & defined(EMBOT_ENABLE_hw_tlv493d_J13off)
     
+#else    
     using namespace embot::hw;
     
     constexpr GPIO gpioMAGVCC1 {GPIO::PORT::E, GPIO::PIN::ten};
@@ -146,11 +148,18 @@ void i2c_address_assignment_to_tlv493d_chips()
     sys::delay(10*embot::core::time1millisec);
     
     // and now ... power up J11 and U27 so that they can have address 0x3E
+#if defined(EMBOT_ENABLE_hw_tlv493d_J11off)
+#else    
     gpio::set(gpioMAGVCC1, gpio::State::SET);
+#endif
+#if defined(EMBOT_ENABLE_hw_tlv493d_U27off)
+#else    
     gpio::set(gpioMAGVCC2, gpio::State::SET);
-    // wait a bit so that the chips are read to use.
+#endif    
+    // wait a bit so that the chips are ready to use.
     sys::delay(10*embot::core::time1millisec);
         
+#endif
 }
 
 void leds_off()
@@ -378,30 +387,32 @@ namespace embot { namespace hw { namespace can {
             // at first make sure these pins are reset
             HAL_GPIO_WritePin(GPIOD, CAN1_STDBY_Pin|CAN1_SHDN_Pin, GPIO_PIN_RESET);
             HAL_Delay(1);
-            
-            // for 80 mhz (from a project by st)
-            hfdcan1.Instance = FDCAN1;
-            hfdcan1.Init.ClockDivider = FDCAN_CLOCK_DIV1;
-            hfdcan1.Init.FrameFormat = FDCAN_FRAME_FD_BRS;
-            hfdcan1.Init.Mode = FDCAN_MODE_NORMAL;
-            hfdcan1.Init.AutoRetransmission = ENABLE;
-            hfdcan1.Init.TransmitPause = ENABLE;
-            hfdcan1.Init.ProtocolException = DISABLE;
-            hfdcan1.Init.NominalPrescaler = 1;
-            hfdcan1.Init.NominalSyncJumpWidth = 16;
-            hfdcan1.Init.NominalTimeSeg1 = 63;
-            hfdcan1.Init.NominalTimeSeg2 = 16;
-            hfdcan1.Init.DataPrescaler = 1;
-            hfdcan1.Init.DataSyncJumpWidth = 4;
-            hfdcan1.Init.DataTimeSeg1 = 5;
-            hfdcan1.Init.DataTimeSeg2 = 4;
-            hfdcan1.Init.StdFiltersNbr = 1;
-            hfdcan1.Init.ExtFiltersNbr = 0;
-            hfdcan1.Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
-            if(HAL_FDCAN_Init(&hfdcan1) != HAL_OK)
-            {
-                Error_Handler();
-            }
+
+            MX_FDCAN1_Init();
+                        
+//            // for 80 mhz (from a project by st)
+//            hfdcan1.Instance = FDCAN1;
+//            hfdcan1.Init.ClockDivider = FDCAN_CLOCK_DIV2;
+//            hfdcan1.Init.FrameFormat = FDCAN_FRAME_FD_BRS;
+//            hfdcan1.Init.Mode = FDCAN_MODE_NORMAL;
+//            hfdcan1.Init.AutoRetransmission = ENABLE;
+//            hfdcan1.Init.TransmitPause = ENABLE;
+//            hfdcan1.Init.ProtocolException = DISABLE;
+//            hfdcan1.Init.NominalPrescaler = 1;
+//            hfdcan1.Init.NominalSyncJumpWidth = 16;
+//            hfdcan1.Init.NominalTimeSeg1 = 63;
+//            hfdcan1.Init.NominalTimeSeg2 = 16;
+//            hfdcan1.Init.DataPrescaler = 1;
+//            hfdcan1.Init.DataSyncJumpWidth = 4;
+//            hfdcan1.Init.DataTimeSeg1 = 5;
+//            hfdcan1.Init.DataTimeSeg2 = 4;
+//            hfdcan1.Init.StdFiltersNbr = 1;
+//            hfdcan1.Init.ExtFiltersNbr = 0;
+//            hfdcan1.Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
+//            if(HAL_FDCAN_Init(&hfdcan1) != HAL_OK)
+//            {
+//                Error_Handler();
+//            }
 
         }
     }
