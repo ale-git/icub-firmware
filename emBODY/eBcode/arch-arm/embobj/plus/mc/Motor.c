@@ -1272,6 +1272,13 @@ void Motor_update_pos_fbk(Motor* o, int32_t position_raw)
     o->pos_raw_cal_fbk = o->pos_fbk*o->GEARBOX;
 }
 
+int32_t Motor_get_pos_fbk(Motor* o)
+{
+    if (o->not_calibrated || o->not_init) return MOTOR_POS_UNAVAIL;
+    
+    return o->pos_fbk;
+}
+
 void Motor_update_current_fbk(Motor* o, int16_t current)
 {
     if (abs(o->Iqq_fbk + current)/2 > o->Iqq_ovl)
