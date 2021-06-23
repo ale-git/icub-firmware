@@ -37,6 +37,21 @@
 
 #define AEA_MIN_SPIKE 16 //4 bitsof zero padding(aea use 12 bits)
           
+static void send_message(char *message, BOOL warning, uint8_t jid, uint16_t par16, uint64_t par64)
+{
+    eOerrmanDescriptor_t errdes = {0};
+
+    errdes.code             = eoerror_code_get(eoerror_category_Debug, eoerror_value_DEB_tag01);
+    errdes.sourcedevice     = eo_errman_sourcedevice_localboard;
+    errdes.sourceaddress    = jid;
+    errdes.par16            = par16;
+    errdes.par64            = par64;
+    eo_errman_Error(eo_errman_GetHandle(), warning ? eo_errortype_warning : eo_errortype_debug, message, NULL, &errdes);
+
+}         
+
+#define DEBUG_MESSAGE(msg,jid,par16,par64) send_message(msg,FALSE,jid,par16,par64)
+#define WARNING_MESSAGE(msg,jid,par16,par64) send_message(msg,TRUE,jid,par16,par64)
 
 AbsEncoder* AbsEncoder_new(uint8_t n)
 {
@@ -59,7 +74,6 @@ void AbsEncoder_init(AbsEncoder* o)
     o->spike_cnt_limit = 32767;
     o->spike_mag_limit = 32767;
     
-    //o->sign = 0;
     o->sign = 0;
     o->gearbox = 1.0f;
     o->GEARBOX = FALSE;
@@ -263,7 +277,7 @@ int32_t AbsEncoder_velocity(AbsEncoder* o)
     
     return o->sign*o->velocity;
 }
-
+/*
 void AbsEncoder_posvel(AbsEncoder* o, int32_t* position, int32_t* velocity)
 {
     if (o->GEARBOX)
@@ -277,10 +291,9 @@ void AbsEncoder_posvel(AbsEncoder* o, int32_t* position, int32_t* velocity)
     *position = (o->sign*o->distance)*o->gearbox;
     *velocity = (o->sign*o->velocity)*o->gearbox;    
 }
-
+*/
 static void AbsEncoder_position_init_aea(AbsEncoder* o, int32_t joint_angle, int32_t motor_angle)
 {
-    
     if (!o->valid_first_data_cnt)
     {
         o->joint_angle_last = joint_angle;
@@ -296,12 +309,15 @@ static void AbsEncoder_position_init_aea(AbsEncoder* o, int32_t joint_angle, int
     if (++o->valid_first_data_cnt >= 3)
     {
         o->joint_angle_last = joint_angle;
+        o->joint_angle = joint_angle;
         
         o->motor_offset = joint_angle - motor_angle;
 
         o->valid_first_data_cnt = 0;
         
         o->state.bits.not_initialized = FALSE;
+        
+        DEBUG_MESSAGE("AMO INITIALIZED", o->ID, o->motor_offset, (((uint64_t)joint_angle)<<32)|motor_angle);
     }
 }
 
@@ -443,11 +459,6 @@ void AbsEncoder_still_check_reset(AbsEncoder* o)
 }
 
 // AMOs
-void AbsEncoder_update_motor_fbk(AbsEncoder* o, int32_t motor_position, int16_t motor_velocity)
-{
-    o->motor_position = motor_position;
-    o->motor_velocity = motor_velocity;
-}
 
 void AbsEncoder_update(AbsEncoder* o, uint16_t raw_sensor, int32_t motor_angle)
 {
@@ -474,8 +485,8 @@ void AbsEncoder_update(AbsEncoder* o, uint16_t raw_sensor, int32_t motor_angle)
     }
     
     motor_angle += o->motor_offset;
-
-    o->amo_error = abs(motor_angle - o->joint_angle) > 182; // 1 deg
+    
+    o->amo_error = abs(motor_angle - joint_angle) > 182; // 1 deg
     
     if (o->amo_error)
     {
@@ -483,112 +494,26 @@ void AbsEncoder_update(AbsEncoder* o, uint16_t raw_sensor, int32_t motor_angle)
         
         o->spike_cnt++;
     }
-    
-    // every second
-    uint64_t iteration = eom_emsrunner_Get_IterationNumber(eom_emsrunner_GetHandle());
-    eOreltime_t period = eom_emsrunner_Get_Period(eom_emsrunner_GetHandle());
-    
-    if ((iteration % period) == 0)
-    {
-        if (o->spike_cnt > 0)
-        {                
-            //message "spike encoder error"
-            eOerrmanDescriptor_t descriptor = {0};
-            descriptor.par16 = o->ID;           
-            descriptor.par64 = o->spike_cnt;
-            descriptor.sourcedevice = eo_errman_sourcedevice_localboard;
-            descriptor.sourceaddress = 0;
-            descriptor.code = eoerror_code_get(eoerror_category_MotionControl, eoerror_value_MC_aea_abs_enc_spikes);
-            eo_errman_Error(eo_errman_GetHandle(), eo_errortype_warning, NULL, NULL, &descriptor);
-            
-            o->spike_cnt = 0;
-        }
-    }
-}
-/*
-void AbsEncoder_update(AbsEncoder* o, uint16_t position)
-{
-    if (!o) return;
-        
-    if (o->fake) return;
-    
-    if (o->state.bits.not_configured) return;
-    
-    //if (o->state.bits.not_calibrated) return;
-    
-    o->invalid_cnt = 0;
-    o->timeout_cnt = 0;
-    
-    if (o->state.bits.not_initialized)
-    {
-        AbsEncoder_position_init(o, position);
-        
-        o->velocity = 0;
-        
-        return;
-    }
-    
-    o->delta = 0;
-    
-    int16_t check = position - o->position_last;
-    
-    o->position_last = position;
-
-    if( (o->spike_mag_limit == 0) || (-o->spike_mag_limit <= check && check <= o->spike_mag_limit))
-    {
-        int16_t delta = position - o->position_sure;
-
-        if (delta)
-        {
-            o->position_sure = position;
-                
-            o->delta = delta;
-                
-            position -= o->offset;
-            
-            o->distance += (int32_t)delta;
-                
-            o->velocity = (7*o->velocity + ((int32_t)CTRL_LOOP_FREQUENCY)*o->delta) >> 3;
-        }
-        else
-        {
-            o->velocity = (7*o->velocity) >> 3;
-        }
-    }
     else
     {
-        o->spike_cnt++;
-       
-        o->velocity = (7*o->velocity) >> 3;
+        o->joint_angle = joint_angle;
     }
-        
-    // every second
-    uint64_t iteration = eom_emsrunner_Get_IterationNumber(eom_emsrunner_GetHandle());
-    eOreltime_t period = eom_emsrunner_Get_Period(eom_emsrunner_GetHandle());
-    if ((iteration % period) == 0)
+    
+    static int noflood[] = {0,250,500,750};
+    
+    if (noflood[o->ID]++ > 1000)
     {
-        if (o->spike_cnt > 0)
-        {                
-            //message "spike encoder error"
-            eOerrmanDescriptor_t descriptor = {0};
-            descriptor.par16 = o->ID;           
-            descriptor.par64 = o->spike_cnt;
-            descriptor.sourcedevice = eo_errman_sourcedevice_localboard;
-            descriptor.sourceaddress = 0;
-            descriptor.code = eoerror_code_get(eoerror_category_MotionControl, eoerror_value_MC_aea_abs_enc_spikes);
-            eo_errman_Error(eo_errman_GetHandle(), eo_errortype_warning, NULL, NULL, &descriptor);
-                
-            if (o->spike_cnt > o->spike_cnt_limit)
-            {
-                o->fault_state.bits.spikes = TRUE;
-                o->hardware_fault = TRUE;
-            }
-            
+        noflood[o->ID] = 0;
+        
+        if (o->spike_cnt)
+        {
             o->spike_cnt = 0;
+        
+            WARNING_MESSAGE("AMO RECOVERY", o->ID, o->spike_cnt, (((uint64_t)joint_angle)<<32)|motor_angle);
         }
     }
 }
-*/
+
 BOOL AbsEncoder_is_fake(AbsEncoder* o)
 {
     return o->fake;
@@ -603,14 +528,6 @@ BOOL AbsEncoder_is_calibrated(AbsEncoder* o)
 {
     return !o->state.bits.not_calibrated;
 }
-
-
-
-
-
-
-
-
 
 static void AbsEncoder_send_error(uint8_t id, eOerror_value_MC_t err_id, uint64_t mask)
 {

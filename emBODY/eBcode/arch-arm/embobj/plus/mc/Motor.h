@@ -211,7 +211,6 @@ typedef struct //Motor
     
     PID trqPID;
     
-    BOOL not_init;
     BOOL not_calibrated;
     BOOL hardware_fault;
     

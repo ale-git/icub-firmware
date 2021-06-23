@@ -152,7 +152,7 @@ extern void AbsEncoder_timeout(AbsEncoder* o);
 
 extern int32_t AbsEncoder_position(AbsEncoder* o);
 extern int32_t AbsEncoder_velocity(AbsEncoder* o);
-extern void AbsEncoder_posvel(AbsEncoder* o, int32_t* position, int32_t* velocity);
+//extern void AbsEncoder_posvel(AbsEncoder* o, int32_t* position, int32_t* velocity);
 
 extern BOOL AbsEncoder_is_ok(AbsEncoder* o);
 extern BOOL AbsEncoder_is_calibrated(AbsEncoder* o);
