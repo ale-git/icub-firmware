@@ -71,7 +71,7 @@ void QEinit(int resolution, int motor_num_poles,char use_index)
 
     // Reset position counter.
     POSCNT = 0;
-
+    
     // Clear interrupt flag
     IFS3bits.QEI1IF = 0;
     
@@ -130,15 +130,17 @@ inline int QEgetElettrDeg()
 volatile int calibOffsetfbk = -1;
 volatile int poscntfbk = 0;
 
-
 inline int QEgetPos() __attribute__((always_inline));
 inline int QEgetPos()
 {
     int poscnt = (int)POSCNT;
     
-    if (abs(poscnt) > QE_RESOLUTION)
+    if (qe_index_found)
     {
-        gEncoderError.index_broken = TRUE;
+        if (abs(poscnt) > QE_RESOLUTION+QE_ERR_THR)
+        {
+            gEncoderError.index_broken = TRUE;
+        }
     }
 
     return __builtin_divsd(((long)poscnt)<<16,QE_RESOLUTION);
@@ -160,11 +162,11 @@ void __attribute__((__interrupt__,no_auto_psv)) _QEI1Interrupt(void)
     
     if (absposcnt > maxCountfbk) maxCountfbk = absposcnt;
     
-    if (qe_index_found && (UPDNold != -1))
-    {
+    if (qe_index_found)
+    {        
         if (UPDNold == QEICONbits.UPDN)
         {
-            if (absposcnt < 2)
+            if (absposcnt < QE_ERR_THR)
             {
                 gEncoderError.phase_broken = TRUE;
             }
