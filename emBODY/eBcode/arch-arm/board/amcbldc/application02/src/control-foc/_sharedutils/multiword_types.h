@@ -11,18 +11,19 @@
 // Simulink Coder version         : 9.5 (R2021a) 14-Nov-2020
 // C/C++ source code generated on : Wed Jul 14 15:12:55 2021
 //
+
 #ifndef MULTIWORD_TYPES_H
 #define MULTIWORD_TYPES_H
 #include "rtwtypes.h"
 
-//
-//  MultiWord supporting definitions
-
+/*
+ * MultiWord supporting definitions
+ */
 typedef long int long_T;
 
-//
-//  MultiWord types
-
+/*
+ * MultiWord types
+ */
 typedef struct {
   uint32_T chunks[2];
 } int64m_T;
@@ -41,7 +42,7 @@ typedef struct {
   uint64m_T im;
 } cuint64m_T;
 
-#endif                                 // MULTIWORD_TYPES_H
+#endif                                 /* MULTIWORD_TYPES_H */
 
 //
 // File trailer for generated code.

@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'control_outer'.
 //
-// Model version                  : 1.95
+// Model version                  : 1.98
 // Simulink Coder version         : 9.5 (R2021a) 14-Nov-2020
-// C/C++ source code generated on : Wed Jul 14 16:43:58 2021
+// C/C++ source code generated on : Fri Jul 16 11:38:05 2021
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: ARM Compatible->ARM Cortex-M
@@ -160,7 +160,7 @@ struct MotorSensors
   real32_T voltage;
   Thresholds threshold;
   real32_T current;
-  boolean_T hallABC[3];
+  uint8_T hallABC;
 };
 
 #endif

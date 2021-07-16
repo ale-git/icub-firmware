@@ -476,8 +476,8 @@ HAL_StatusTypeDef analogInit(void)
 				__HAL_DMA_ENABLE_IT(hadc1.DMA_Handle, DMA_IT_TC);
 				__HAL_DMA_ENABLE_IT(hadc2.DMA_Handle, DMA_IT_TC);
 				/* Enable the ADC in DMA mode */
-				if ((HAL_OK == HAL_ADC_Start_DMA(&hadc1, (uint32_t *)&adc1_Buffer, sizeof(adc1_Buffer)/sizeof(uint16_t))) &&
-					(HAL_OK == HAL_ADC_Start_DMA(&hadc2, (uint32_t *)&adc2_Buffer, sizeof(adc2_Buffer)/sizeof(uint16_t))))
+				if ((HAL_OK == HAL_ADC_Start_DMA(&hadc1, (uint32_t *)&adc1_Buffer, sizeof(adc1_Buffer)/(sizeof(uint16_t)))) &&
+					(HAL_OK == HAL_ADC_Start_DMA(&hadc2, (uint32_t *)&adc2_Buffer, sizeof(adc2_Buffer)/(sizeof(uint16_t)))))
 				{
 					/* DMA is running now */
 					result = HAL_OK;

@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'control_foc'.
 //
-// Model version                  : 1.112
+// Model version                  : 1.115
 // Simulink Coder version         : 9.5 (R2021a) 14-Nov-2020
-// C/C++ source code generated on : Wed Jul 14 16:38:29 2021
+// C/C++ source code generated on : Fri Jul 16 11:37:52 2021
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: ARM Compatible->ARM Cortex-M
@@ -26,13 +26,13 @@ void control_focModelClass::control_foc_ISR(const boolean_T *rtu_Flags_PID_reset
   const real32_T *rtu_Config_motorconfig_Rphase, const real32_T
   *rtu_Config_motorconfig_Vmax, const real32_T *rtu_Config_motorconfig_Vcc,
   const real32_T rtu_Sensors_motorsensors_Iabc[3], const real32_T
-  *rtu_Sensors_motorsensors_omeg_k, const boolean_T
-  rtu_Sensors_motorsensors_hall_e[3], const real32_T
+  *rtu_Sensors_motorsensors_omeg_k, const uint8_T
+  *rtu_Sensors_motorsensors_hall_e, const real32_T
   *rtu_Targets_motorcurrent_curr_c, const real32_T
   *rtu_Targets_motorvoltage_volt_e, const boolean_T *rtu_OuterOutputs_vel_en,
   const boolean_T *rtu_OuterOutputs_cur_en, const boolean_T
   *rtu_OuterOutputs_out_en, const real32_T *rtu_OuterOutputs_motorcurrent_d,
-  real32_T rty_Vabc_PWM_ticks[3])
+  uint16_T rty_Vabc_PWM_ticks[3])
 {
   // RootInportFunctionCallGenerator generated from: '<Root>/ISR' incorporates:
   //   SubSystem: '<Root>/FOC inner loop'

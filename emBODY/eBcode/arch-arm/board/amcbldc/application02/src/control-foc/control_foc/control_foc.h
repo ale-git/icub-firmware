@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'control_foc'.
 //
-// Model version                  : 1.112
+// Model version                  : 1.115
 // Simulink Coder version         : 9.5 (R2021a) 14-Nov-2020
-// C/C++ source code generated on : Wed Jul 14 16:38:29 2021
+// C/C++ source code generated on : Fri Jul 16 11:37:52 2021
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: ARM Compatible->ARM Cortex-M
@@ -59,14 +59,14 @@ class control_focModelClass {
                        *rtu_Config_motorconfig_Vmax, const real32_T
                        *rtu_Config_motorconfig_Vcc, const real32_T
                        rtu_Sensors_motorsensors_Iabc[3], const real32_T
-                       *rtu_Sensors_motorsensors_omeg_k, const boolean_T
-                       rtu_Sensors_motorsensors_hall_e[3], const real32_T
+                       *rtu_Sensors_motorsensors_omeg_k, const uint8_T
+                       *rtu_Sensors_motorsensors_hall_e, const real32_T
                        *rtu_Targets_motorcurrent_curr_c, const real32_T
                        *rtu_Targets_motorvoltage_volt_e, const boolean_T
                        *rtu_OuterOutputs_vel_en, const boolean_T
                        *rtu_OuterOutputs_cur_en, const boolean_T
                        *rtu_OuterOutputs_out_en, const real32_T
-                       *rtu_OuterOutputs_motorcurrent_d, real32_T
+                       *rtu_OuterOutputs_motorcurrent_d, uint16_T
                        rty_Vabc_PWM_ticks[3]);
 
   // Constructor
@@ -99,7 +99,7 @@ class control_focModelClass {
                     *rtu_MotorConfig_i, const real32_T *rtu_MotorConfig_ig,
                     const real32_T *rtu_MotorConfig_a, const real32_T
                     *rtu_MotorConfig_c, const real32_T *rtu_RotorSpeed, const
-                    boolean_T rtu_hallABC[3], real32_T rty_Vabc[3]);
+                    uint8_T *rtu_hallABC, uint16_T rty_Vabc[3]);
 };
 
 //-
@@ -139,7 +139,7 @@ class control_focModelClass {
 //  '<S2>'   : 'control_foc/FOC inner loop/Clarke Transform'
 //  '<S3>'   : 'control_foc/FOC inner loop/Id PID control'
 //  '<S4>'   : 'control_foc/FOC inner loop/Inverse Clarke Transform'
-//  '<S5>'   : 'control_foc/FOC inner loop/Inverse Park Transform1'
+//  '<S5>'   : 'control_foc/FOC inner loop/Inverse Park Transform'
 //  '<S6>'   : 'control_foc/FOC inner loop/Iq PID control'
 //  '<S7>'   : 'control_foc/FOC inner loop/Park Transform'
 //  '<S8>'   : 'control_foc/FOC inner loop/Saturation Dynamic'
@@ -195,7 +195,7 @@ class control_focModelClass {
 //  '<S58>'  : 'control_foc/FOC inner loop/Id PID control/Tsamp - Ngain/Passthrough'
 //  '<S59>'  : 'control_foc/FOC inner loop/Id PID control/postSat Signal/Feedback_Path'
 //  '<S60>'  : 'control_foc/FOC inner loop/Id PID control/preSat Signal/Feedback_Path'
-//  '<S61>'  : 'control_foc/FOC inner loop/Inverse Park Transform1/Switch_Axis'
+//  '<S61>'  : 'control_foc/FOC inner loop/Inverse Park Transform/Switch_Axis'
 //  '<S62>'  : 'control_foc/FOC inner loop/Iq PID control/Anti-windup'
 //  '<S63>'  : 'control_foc/FOC inner loop/Iq PID control/D Gain'
 //  '<S64>'  : 'control_foc/FOC inner loop/Iq PID control/Filter'

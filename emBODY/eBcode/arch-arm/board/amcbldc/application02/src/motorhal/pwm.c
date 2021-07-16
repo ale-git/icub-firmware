@@ -74,6 +74,24 @@ static volatile uint16_t hallAngle = 0;
 static volatile int16_t hallCurrentPhase = 0;
 static volatile int16_t hallCurrent = 0;
 
+#ifndef ALE_WIP_REMOVE
+struct adc_callback_set_T
+{
+    void (*callback_fn)(int16_t Iuvw[3], void* rtu, void* rty) = NULL;
+    void* rtu = NULL;
+    void* rty = NULL;
+};
+
+static volatile adc_callback_set_T adc_callback_set;
+
+void setADC_cb(void (*fn_cb)(int16_t[3], void*, void*), void* rtu, void* rty)
+{
+    adc_callback_set.callback_fn = fn_cb;
+    adc_callback_set.rtu = rtu;
+    adc_callback_set.rty = rty;
+}
+#endif
+
 #if defined(USE_STM32HAL) && defined(__cplusplus)
 constexpr uint16_t hallAngleTable[] =
 {
@@ -132,6 +150,7 @@ static const uint16_t hallAngleTable[] =
  *      LOW means that PHASEx is in LOW state (ENx = 1, PWMx = 0)
  *      PWM means that PHASEx is modulated with the pwm value (ENx = 1, PWMx = pwm)
  */
+ #ifdef ALE_WIP_REMOVE
 static void hallSetPWM(int16_t pwm)
 {
 #ifdef USE_HALL_SENSORS
@@ -313,7 +332,15 @@ static void hallSetPWM(int16_t pwm)
     /* Update angle */
     hallAngle = hallAngleTable[hallStatus];
 }
-
+#else
+static void updateHallStatus(void)
+{
+        /* Read current value of HALL1, HALL2 and HALL3 signals in bits 2..0 */
+    hallStatus = (((HALL1_GPIO_Port->IDR & HALL1_Pin) >> MSB(HALL1_Pin)) << 2)
+               | (((HALL2_GPIO_Port->IDR & HALL2_Pin) >> MSB(HALL2_Pin)) << 1)
+               | (((HALL3_GPIO_Port->IDR & HALL3_Pin) >> MSB(HALL3_Pin)) << 0);
+}
+#endif
 
 /* Callback functions *************************************************************************************************/
 
@@ -356,7 +383,11 @@ static void hallStatusChange_cb(TIM_HandleTypeDef *htim)
     if (TIM3 == htim->Instance)
     {
         /* Generate the correct PWM configuration following the pwmStatus pattern */
+        #ifdef ALE_WIP_REMOVE
         hallSetPWM(pwmStatus);
+        #else
+        updateHallStatus();
+        #endif
     }
 }
 
@@ -368,6 +399,11 @@ static void hallStatusChange_cb(TIM_HandleTypeDef *htim)
  */
 void pwmSetCurrents_cb(int16_t i1, int16_t i2, int16_t i3)
 {
+    int16_t I[] = {i1, i2, i3};
+    
+    adc_callback_set.callback_fn(I, adc_callback_set.rtu, adc_callback_set.rty); 
+    
+    #ifdef ALE_WIP_REMOVE
     switch (hallCurrentPhase)
     {
         case HALL_CURRENT_PHASE1:
@@ -379,7 +415,8 @@ void pwmSetCurrents_cb(int16_t i1, int16_t i2, int16_t i3)
         case HALL_CURRENT_PHASE3:
             hallCurrent = i3;
             break;
-    }        
+    }
+    #endif
 }
 
 
@@ -410,7 +447,11 @@ HAL_StatusTypeDef pwmInit(void)
     __HAL_TIM_ENABLE_IT(&htim1, TIM_IT_BREAK);
 
     /* Reset the PWM value */
+    #ifdef ALE_WIP_REMOVE
     hallSetPWM(pwmStatus);
+    #else
+    updateHallStatus();
+    #endif
 
     /* Start TIM1 as 3-phase PWM generator */
     if (HAL_OK != HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1) ||
@@ -623,6 +664,7 @@ void pwmPhaseDisable(uint16_t mask)
  * @param   
  * @return  Function result
  */
+#ifdef ALE_WIP_REMOVE
 HAL_StatusTypeDef pwmSetValue(int32_t pwm)
 {
     if ((pwm >= -(int32_t)MAX_PWM) && (pwm <= (int32_t)MAX_PWM))
@@ -636,7 +678,7 @@ HAL_StatusTypeDef pwmSetValue(int32_t pwm)
     }
     return HAL_ERROR;
 }
-
+#endif
 #if defined(HALCONFIG_DONTUSE_TESTS)
 #else
 

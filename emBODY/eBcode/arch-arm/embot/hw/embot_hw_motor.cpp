@@ -128,9 +128,14 @@ namespace embot { namespace hw { namespace motor {
     
     result_t s_hw_init(MOTOR h);
     Position s_hw_getencoder(MOTOR h);
-    Position s_hw_gethallcounter(MOTOR h);    
+    Position s_hw_gethallcounter(MOTOR h);
+    #ifdef ALE_WIP_REMOVE
     result_t s_hw_setpwm(MOTOR h, Pwm v);
-              
+    #else
+    result_t s_hw_setpwmUVW(MOTOR h, Pwm u, Pwm v, Pwm w);
+    result_t s_hw_setADCcallback(MOTOR h, void (*fn_cb)(int16_t[3], void*, void*), void* rtu, void* rty);
+    #endif
+    
     result_t init(MOTOR h, const Config &config)
     {
         if(false == supported(h))
@@ -203,9 +208,21 @@ namespace embot { namespace hw { namespace motor {
         return resOK;               
     }
     
+    #ifdef ALE_WIP_REMOVE
     result_t setpwm(MOTOR h, Pwm v)
     {
         return s_hw_setpwm(h, v);
+    }
+    #else
+    result_t setpwmUVW(MOTOR h, Pwm u, Pwm v, Pwm w)
+    {
+        return s_hw_setpwmUVW(h, u, v, w);
+    }
+    #endif
+    
+    result_t setADCcallback(MOTOR h, void (*fn_cb)(int16_t[3], void*, void*), void* rtu, void* rty)
+    {
+        return s_hw_setADCcallback(h, fn_cb, rtu, rty);
     }
     
 // in here is the part for low level hw of the amcbldc
@@ -264,10 +281,24 @@ namespace embot { namespace hw { namespace motor {
         return hallGetCounter();
     }
     
+    #ifdef ALE_WIP_REMOVE
     result_t s_hw_setpwm(MOTOR h, Pwm v)
     {        
         HAL_StatusTypeDef r = pwmSetValue(v);
         return (HAL_OK == r) ? resOK : resNOK;
+    }
+    #else
+    result_t s_hw_setpwmUVW(MOTOR h, Pwm u, Pwm v, Pwm w)
+    {        
+        pwmSet(u, v, w);
+        return resOK;
+    }
+    #endif
+    
+    result_t s_hw_setADCcallback(MOTOR h, void (*fn_cb)(int16_t[3], void*, void*), void* rtu, void* rty)
+    {
+        setADC_cb(fn_cb, rtu, rty);
+        return resOK;
     }
     
 #endif    
