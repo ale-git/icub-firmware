@@ -40,6 +40,7 @@ struct embot::app::application::theMCagent2::Impl
     embot::hw::motor::Position hallcounter {0};
         
     embot::hw::motor::Pwm pwm {0};
+    int16_T current_ref = 0;
     embot::prot::can::motor::polling::ControlMode cm {embot::prot::can::motor::polling::ControlMode::Idle};    
     bool applychanges {false};
     
@@ -88,22 +89,26 @@ struct embot::app::application::theMCagent2::Impl
     
     struct rtu_control_foc_T
     {
-        boolean_T rtu_Flags_PID_reset;
-        real32_T rtu_Config_motorconfig_Kp;
-        real32_T rtu_Config_motorconfig_Ki;
-        real32_T rtu_Config_motorconfig_Kbemf;
-        real32_T rtu_Config_motorconfig_Rphase;
-        real32_T rtu_Config_motorconfig_Vmax;
-        real32_T rtu_Config_motorconfig_Vcc;
-        real32_T rtu_Sensors_motorsensors_Iabc[3];
-        real32_T rtu_Sensors_motorsensors_omeg_k;
-        uint8_T rtu_Sensors_motorsensors_hall_e;
-        real32_T rtu_Targets_motorcurrent_curr_c;
-        real32_T rtu_Targets_motorvoltage_volt_e;
-        boolean_T rtu_OuterOutputs_vel_en;
-        boolean_T rtu_OuterOutputs_cur_en;
-        boolean_T rtu_OuterOutputs_out_en;
-        real32_T rtu_OuterOutputs_motorcurrent_d;
+        boolean_T rtu_Flags_PID_reset = false;
+        
+        real32_T rtu_Config_motorconfig_Kp = 0.0002f;
+        real32_T rtu_Config_motorconfig_Ki = 0.0002f/4.0f;
+        
+        real32_T rtu_Config_motorconfig_Kbemf  = 0;
+        real32_T rtu_Config_motorconfig_Rphase = 0;
+        
+        real32_T rtu_Config_motorconfig_Vmax = 12;
+        real32_T rtu_Config_motorconfig_Vcc  = 24;
+        
+        real32_T rtu_Sensors_motorsensors_Iabc[3] = {0,0,0};
+        real32_T rtu_Sensors_motorsensors_omeg_k = 0;
+        uint8_T rtu_Sensors_motorsensors_hall_e  = 0;
+        real32_T rtu_Targets_motorcurrent_curr_c = 0;
+        real32_T rtu_Targets_motorvoltage_volt_e = 0;
+        boolean_T rtu_OuterOutputs_vel_en = 0;
+        boolean_T rtu_OuterOutputs_cur_en = 0;
+        boolean_T rtu_OuterOutputs_out_en = 0;
+        real32_T rtu_OuterOutputs_motorcurrent_d = 0;
     };
     
     rtu_control_foc_T rtu_control_foc;
@@ -126,6 +131,11 @@ struct embot::app::application::theMCagent2::Impl
         u->rtu_Sensors_motorsensors_Iabc[0] = Iuvw[0];
         u->rtu_Sensors_motorsensors_Iabc[1] = Iuvw[1];
         u->rtu_Sensors_motorsensors_Iabc[2] = Iuvw[2];
+        
+        uint16_t hallstatus;
+        embot::hw::motor::gethallstatus(embot::hw::MOTOR::one, hallstatus);
+        
+        u->rtu_Sensors_motorsensors_hall_e = hallstatus;
         
         control_foc.control_foc_ISR(
             &(u->rtu_Flags_PID_reset), 
@@ -177,43 +187,63 @@ struct embot::app::application::theMCagent2::Impl
             // in case i change the pwm ... well, we manage that in HERE
             if(embot::prot::can::motor::polling::ControlMode::Idle == cm)
             {
-                pwm = 0; //  i force pwm = 0               
+                pwm = 0; //  i force pwm = 0
+                current_ref = 0;
+                rty_OuterOutputs_out_en = false;
+                rty_OuterOutputs_vel_en = false;
+                rty_OuterOutputs_cur_en = false;
+            }
+                        
+            if(embot::prot::can::motor::polling::ControlMode::Current == cm)
+            {
+                pwm = 0; //  i force pwm = 0
+                current_ref = 0;
+                rty_OuterOutputs_out_en = true;
+                rty_OuterOutputs_vel_en = false;
+                rty_OuterOutputs_cur_en = true;
             }
             
-            // HERE
-            //embot::hw::motor::setpwm(embot::hw::MOTOR::one, pwm);
-            
-            control_outer.step(
-                &rtu_Flags_control_mode, 
-                &rtu_Flags_PID_reset, 
-                rtu_Config_velocitylimits_limit,
-                &rtu_Config_motorconfig_reductio,
-                &rtu_Config_motorconfig_has_spee,
-                &rtu_Config_PosLoopPID_P, 
-                &rtu_Config_PosLoopPID_I,
-                &rtu_Config_PosLoopPID_D, 
-                &rtu_Config_PosLoopPID_N, 
-                &rtu_Config_VelLoopPID_P,
-                &rtu_Config_VelLoopPID_I, 
-                &rtu_Config_VelLoopPID_D, 
-                &rtu_Config_VelLoopPID_N,
-                &rtu_Config_DirLoopPID_P, 
-                &rtu_Config_DirLoopPID_I, 
-                &rtu_Config_DirLoopPID_D,
-                &rtu_Config_DirLoopPID_N, 
-                &rtu_Sensors_jointpositions_posi, 
-                &rtu_Sensors_motorsensors_omega, 
-                &rtu_Targets_jointpositions_posi, 
-                &rtu_Targets_jointvelocities_vel, 
-                &rty_OuterOutputs_vel_en,
-                &rty_OuterOutputs_cur_en, 
-                &rty_OuterOutputs_out_en, 
-                &rty_OuterOutputs_motorcurrent_c
-            );
-             
             applychanges = false;      
         }
         
+        /*
+        control_outer.step(
+            &rtu_Flags_control_mode, 
+            &rtu_Flags_PID_reset, 
+            rtu_Config_velocitylimits_limit,
+            &rtu_Config_motorconfig_reductio,
+            &rtu_Config_motorconfig_has_spee,
+            &rtu_Config_PosLoopPID_P, 
+            &rtu_Config_PosLoopPID_I,
+            &rtu_Config_PosLoopPID_D, 
+            &rtu_Config_PosLoopPID_N, 
+            &rtu_Config_VelLoopPID_P,
+            &rtu_Config_VelLoopPID_I, 
+            &rtu_Config_VelLoopPID_D, 
+            &rtu_Config_VelLoopPID_N,
+            &rtu_Config_DirLoopPID_P, 
+            &rtu_Config_DirLoopPID_I, 
+            &rtu_Config_DirLoopPID_D,
+            &rtu_Config_DirLoopPID_N, 
+            &rtu_Sensors_jointpositions_posi, 
+            &rtu_Sensors_motorsensors_omega, 
+            &rtu_Targets_jointpositions_posi, 
+            &rtu_Targets_jointvelocities_vel, 
+            &rty_OuterOutputs_vel_en,
+            &rty_OuterOutputs_cur_en, 
+            &rty_OuterOutputs_out_en, 
+            &rty_OuterOutputs_motorcurrent_c
+        );
+        */
+        
+        rtu_control_foc.rtu_OuterOutputs_vel_en = rty_OuterOutputs_vel_en;
+        rtu_control_foc.rtu_OuterOutputs_cur_en = rty_OuterOutputs_cur_en;
+        rtu_control_foc.rtu_OuterOutputs_out_en = rty_OuterOutputs_out_en;
+        
+        rty_OuterOutputs_motorcurrent_c = current_ref;
+        
+        rtu_control_foc.rtu_OuterOutputs_motorcurrent_d = rty_OuterOutputs_motorcurrent_c;
+        rtu_control_foc.rtu_OuterOutputs_motorcurrent_d = current_ref;
         
         if(embot::prot::can::motor::polling::ControlMode::Idle != cm)
         {
@@ -288,7 +318,8 @@ bool embot::app::application::theMCagent2::get(const embot::prot::can::motor::pe
 {
     embot::core::print("received EMSTO2FOC_DESIRED_CURRENT[]: " + std::to_string(info.current[0]) + ", " + std::to_string(info.current[1]) + ", " + std::to_string(info.current[2]));
  
-    pImpl->pwm = info.current[0];  
+    //pImpl->pwm = info.current[0];
+    pImpl->current_ref = info.current[0];    
     pImpl->applychanges = true;
     
     return true;    

@@ -132,6 +132,7 @@ namespace embot { namespace hw { namespace motor {
     #ifdef ALE_WIP_REMOVE
     result_t s_hw_setpwm(MOTOR h, Pwm v);
     #else
+    uint16_t s_hw_gethallstatus(MOTOR h);
     result_t s_hw_setpwmUVW(MOTOR h, Pwm u, Pwm v, Pwm w);
     result_t s_hw_setADCcallback(MOTOR h, void (*fn_cb)(int16_t[3], void*, void*), void* rtu, void* rty);
     #endif
@@ -214,6 +215,19 @@ namespace embot { namespace hw { namespace motor {
         return s_hw_setpwm(h, v);
     }
     #else
+    result_t gethallstatus(MOTOR h, uint16_t &hs)
+    {
+        if(false == initialised(h))
+        {
+            return resNOK;
+        } 
+        
+        //std::uint8_t index = embot::core::tointegral(h);
+        //position = s_privatedata.tbdef[index].position;
+        hs = s_hw_gethallstatus(h);
+        
+        return resOK;               
+    }
     result_t setpwmUVW(MOTOR h, Pwm u, Pwm v, Pwm w)
     {
         return s_hw_setpwmUVW(h, u, v, w);
@@ -288,6 +302,10 @@ namespace embot { namespace hw { namespace motor {
         return (HAL_OK == r) ? resOK : resNOK;
     }
     #else
+    uint16_t s_hw_gethallstatus(MOTOR h)
+    {
+        return hallGetStatus();
+    }
     result_t s_hw_setpwmUVW(MOTOR h, Pwm u, Pwm v, Pwm w)
     {        
         pwmSet(u, v, w);

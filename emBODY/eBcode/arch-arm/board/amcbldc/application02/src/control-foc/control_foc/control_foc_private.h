@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'control_foc'.
 //
-// Model version                  : 1.115
+// Model version                  : 1.117
 // Simulink Coder version         : 9.5 (R2021a) 14-Nov-2020
-// C/C++ source code generated on : Fri Jul 16 11:37:52 2021
+// C/C++ source code generated on : Mon Jul 19 15:22:36 2021
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: ARM Compatible->ARM Cortex-M
@@ -84,9 +84,9 @@ preprocessor word size checks.
 #define rtmSetErrorStatusPointer(rtm, val) ((rtm)->errorStatus = (val))
 #endif
 
-extern const int8_T rtCP_pooled_G7avobbR7OVa[8];
+extern const int8_T rtCP_pooled_5SZIAZGURVjQ[8];
 
-#define rtCP_DirectLookupTablenD1_table rtCP_pooled_G7avobbR7OVa // Computed Parameter: rtCP_DirectLookupTablenD1_table
+#define rtCP_DirectLookupTablenD1_table rtCP_pooled_5SZIAZGURVjQ // Computed Parameter: rtCP_DirectLookupTablenD1_table
                                                                  //  Referenced by: '<S1>/Direct Lookup Table (n-D)1'
 
 #endif                                 // RTW_HEADER_control_foc_private_h_

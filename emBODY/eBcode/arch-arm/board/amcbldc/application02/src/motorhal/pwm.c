@@ -399,10 +399,6 @@ static void hallStatusChange_cb(TIM_HandleTypeDef *htim)
  */
 void pwmSetCurrents_cb(int16_t i1, int16_t i2, int16_t i3)
 {
-    int16_t I[] = {i1, i2, i3};
-    
-    adc_callback_set.callback_fn(I, adc_callback_set.rtu, adc_callback_set.rty); 
-    
     #ifdef ALE_WIP_REMOVE
     switch (hallCurrentPhase)
     {
@@ -415,6 +411,13 @@ void pwmSetCurrents_cb(int16_t i1, int16_t i2, int16_t i3)
         case HALL_CURRENT_PHASE3:
             hallCurrent = i3;
             break;
+    }
+    #else
+    int16_t I[] = {i1, i2, i3};
+    
+    if (adc_callback_set.callback_fn && adc_callback_set.rtu && adc_callback_set.rty)
+    {
+        adc_callback_set.callback_fn(I, adc_callback_set.rtu, adc_callback_set.rty); 
     }
     #endif
 }

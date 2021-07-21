@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'control_foc'.
 //
-// Model version                  : 1.115
+// Model version                  : 1.117
 // Simulink Coder version         : 9.5 (R2021a) 14-Nov-2020
-// C/C++ source code generated on : Fri Jul 16 11:37:52 2021
+// C/C++ source code generated on : Mon Jul 19 15:22:36 2021
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: ARM Compatible->ARM Cortex-M
@@ -220,7 +220,8 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
   }
 
   // DiscreteIntegrator: '<S43>/Integrator'
-  rtb_algDD_o2_n = 1.875E-5F * rtb_sum_alpha + control_foc_DW.Integrator_DSTATE;
+  rtb_algDD_o2_n = 1.78571427E-5F * rtb_sum_alpha +
+    control_foc_DW.Integrator_DSTATE;
 
   // Sum: '<S53>/Sum'
   rtb_algDD_o1_p = rtb_sum_beta + rtb_algDD_o2_n;
@@ -266,7 +267,7 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
   }
 
   // DiscreteIntegrator: '<S93>/Integrator'
-  rtb_algDD_o2 = 1.875E-5F * rtb_Sum_g + control_foc_DW.Integrator_DSTATE_m;
+  rtb_algDD_o2 = 1.78571427E-5F * rtb_Sum_g + control_foc_DW.Integrator_DSTATE_m;
 
   // Sum: '<S1>/Sum2' incorporates:
   //   Sum: '<S102>/Sum'
@@ -386,7 +387,8 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
   // End of Switch: '<S1>/Switch2'
 
   // Update for DiscreteIntegrator: '<S43>/Integrator'
-  control_foc_DW.Integrator_DSTATE = 1.875E-5F * rtb_sum_alpha + rtb_algDD_o2_n;
+  control_foc_DW.Integrator_DSTATE = 1.78571427E-5F * rtb_sum_alpha +
+    rtb_algDD_o2_n;
   Integrator_PrevResetState_tmp = static_cast<int8_T>(*rtu_Reset);
 
   // Update for DiscreteIntegrator: '<S43>/Integrator'
@@ -398,7 +400,7 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
   control_foc_DW.UnitDelay_DSTATE = rtb_algDD_o1_p - rtb_Product2;
 
   // Update for DiscreteIntegrator: '<S93>/Integrator'
-  control_foc_DW.Integrator_DSTATE_m = 1.875E-5F * rtb_Sum_g + rtb_algDD_o2;
+  control_foc_DW.Integrator_DSTATE_m = 1.78571427E-5F * rtb_Sum_g + rtb_algDD_o2;
   control_foc_DW.Integrator_PrevResetState_k = Integrator_PrevResetState_tmp;
 }
 

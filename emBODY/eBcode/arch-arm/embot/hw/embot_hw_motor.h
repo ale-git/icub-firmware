@@ -47,6 +47,7 @@ namespace embot { namespace hw { namespace motor {
     #ifdef ALE_WIP_REMOVE
     result_t setpwm(MOTOR h, Pwm v);
     #else
+    result_t gethallstatus(embot::hw::MOTOR h, uint16_t &hs);
     result_t setpwmUVW(MOTOR h, Pwm u, Pwm v, Pwm w);
     result_t setADCcallback(MOTOR h, void (*fn_cb)(int16_t[3], void*, void*), void* rtu, void* rty);
     #endif
