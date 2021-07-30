@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'control_foc'.
 //
-// Model version                  : 1.117
+// Model version                  : 1.120
 // Simulink Coder version         : 9.5 (R2021a) 14-Nov-2020
-// C/C++ source code generated on : Mon Jul 19 15:22:36 2021
+// C/C++ source code generated on : Fri Jul 30 09:48:35 2021
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: ARM Compatible->ARM Cortex-M
@@ -26,26 +26,28 @@ void control_focModelClass::control_foc_ISR(const boolean_T *rtu_Flags_PID_reset
   const real32_T *rtu_Config_motorconfig_Rphase, const real32_T
   *rtu_Config_motorconfig_Vmax, const real32_T *rtu_Config_motorconfig_Vcc,
   const real32_T rtu_Sensors_motorsensors_Iabc[3], const real32_T
+  *rtu_Sensors_motorsensors_angl_k, const real32_T
   *rtu_Sensors_motorsensors_omeg_k, const uint8_T
-  *rtu_Sensors_motorsensors_hall_e, const real32_T
-  *rtu_Targets_motorcurrent_curr_c, const real32_T
-  *rtu_Targets_motorvoltage_volt_e, const boolean_T *rtu_OuterOutputs_vel_en,
+  *rtu_Sensors_motorsensors_hall_k, const real32_T
+  *rtu_Targets_motorcurrent_curr_e, const real32_T
+  *rtu_Targets_motorvoltage_volt_c, const boolean_T *rtu_OuterOutputs_vel_en,
   const boolean_T *rtu_OuterOutputs_cur_en, const boolean_T
   *rtu_OuterOutputs_out_en, const real32_T *rtu_OuterOutputs_motorcurrent_d,
-  uint16_T rty_Vabc_PWM_ticks[3])
+  uint16_T rty_Vabc_PWM_ticks[3], real32_T *rty_Iq_fbk_current)
 {
   // RootInportFunctionCallGenerator generated from: '<Root>/ISR' incorporates:
   //   SubSystem: '<Root>/FOC inner loop'
 
-  FOCInnerLoop(rtu_OuterOutputs_motorcurrent_d, rtu_Targets_motorcurrent_curr_c,
-               rtu_Targets_motorvoltage_volt_e, rtu_Flags_PID_reset,
+  FOCInnerLoop(rtu_OuterOutputs_motorcurrent_d, rtu_Targets_motorcurrent_curr_e,
+               rtu_Targets_motorvoltage_volt_c, rtu_Flags_PID_reset,
                rtu_OuterOutputs_cur_en, rtu_OuterOutputs_vel_en,
-               rtu_OuterOutputs_out_en, rtu_Sensors_motorsensors_Iabc,
-               rtu_Config_motorconfig_Rphase, rtu_Config_motorconfig_Kbemf,
-               rtu_Config_motorconfig_Kp, rtu_Config_motorconfig_Vmax,
-               rtu_Config_motorconfig_Ki, rtu_Config_motorconfig_Vcc,
-               rtu_Sensors_motorsensors_omeg_k, rtu_Sensors_motorsensors_hall_e,
-               rty_Vabc_PWM_ticks);
+               rtu_OuterOutputs_out_en, rtu_Sensors_motorsensors_angl_k,
+               rtu_Sensors_motorsensors_Iabc, rtu_Config_motorconfig_Rphase,
+               rtu_Config_motorconfig_Kbemf, rtu_Config_motorconfig_Kp,
+               rtu_Config_motorconfig_Vmax, rtu_Config_motorconfig_Ki,
+               rtu_Config_motorconfig_Vcc, rtu_Sensors_motorsensors_omeg_k,
+               rtu_Sensors_motorsensors_hall_k, rty_Vabc_PWM_ticks,
+               rty_Iq_fbk_current);
 
   // End of Outputs for RootInportFunctionCallGenerator generated from: '<Root>/ISR' 
 }

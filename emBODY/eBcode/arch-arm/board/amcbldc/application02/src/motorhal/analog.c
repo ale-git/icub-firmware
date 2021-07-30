@@ -185,6 +185,12 @@ static int32_t analogMovingAverage(analogAvgFilterTypeDef *filter, int32_t sampl
     return filter->avg;
 }
 
+void analogMovingAverage(int16_t i1, int16_t i2, int16_t i3)
+{
+    analogMovingAverage(&cph1Filter, i1);
+    analogMovingAverage(&cph2Filter, i2);
+    analogMovingAverage(&cph3Filter, i3);
+}
 
 /* Callback functions *************************************************************************************************/
 
@@ -208,9 +214,9 @@ static void adc1_TransferComplete_cb(ADC_HandleTypeDef *hadc)
 static void adc2_HalfTransferComplete_cb(ADC_HandleTypeDef *hadc)
 {
     pwmSetCurrents_cb(adc2_Buffer[0].cph1, adc2_Buffer[0].cph2, adc2_Buffer[0].cph3);
-    analogMovingAverage(&cph1Filter, adc2_Buffer[0].cph1);
-    analogMovingAverage(&cph2Filter, adc2_Buffer[0].cph2);
-    analogMovingAverage(&cph3Filter, adc2_Buffer[0].cph3);
+    //analogMovingAverage(&cph1Filter, adc2_Buffer[0].cph1);
+    //analogMovingAverage(&cph2Filter, adc2_Buffer[0].cph2);
+    //analogMovingAverage(&cph3Filter, adc2_Buffer[0].cph3);
 }
 
 /*******************************************************************************************************************//**
@@ -221,9 +227,9 @@ static void adc2_HalfTransferComplete_cb(ADC_HandleTypeDef *hadc)
 static void adc2_TransferComplete_cb(ADC_HandleTypeDef *hadc)
 {
     pwmSetCurrents_cb(adc2_Buffer[1].cph1, adc2_Buffer[1].cph2, adc2_Buffer[1].cph3);
-    analogMovingAverage(&cph1Filter, adc2_Buffer[1].cph1);
-    analogMovingAverage(&cph2Filter, adc2_Buffer[1].cph2);
-    analogMovingAverage(&cph3Filter, adc2_Buffer[1].cph3);
+    //analogMovingAverage(&cph1Filter, adc2_Buffer[1].cph1);
+    //analogMovingAverage(&cph2Filter, adc2_Buffer[1].cph2);
+    //analogMovingAverage(&cph3Filter, adc2_Buffer[1].cph3);
 }
 
 
@@ -310,8 +316,9 @@ int32_t analogCin(void)
  */
 int32_t analogCph1(void)
 {
-    int32_t raw = cph1Filter.avg >> ANALOG_AVG_FILTER_SHIFT;
-	return CIN_GAIN * vref_mV * raw >> 16u;
+    //int32_t raw = cph1Filter.avg >> ANALOG_AVG_FILTER_SHIFT;
+	//return CIN_GAIN * vref_mV * raw >> 16u;
+    return cph1Filter.avg >> ANALOG_AVG_FILTER_SHIFT;
 }
 
 /*******************************************************************************************************************//**
@@ -321,8 +328,14 @@ int32_t analogCph1(void)
  */
 int32_t analogCph2(void)
 {
-    int32_t raw = cph2Filter.avg >> ANALOG_AVG_FILTER_SHIFT;
-	return CIN_GAIN * vref_mV * raw >> 16u;
+    //int32_t raw = cph2Filter.avg >> ANALOG_AVG_FILTER_SHIFT;
+	//return CIN_GAIN * vref_mV * raw >> 16u;
+    return cph2Filter.avg >> ANALOG_AVG_FILTER_SHIFT;
+}
+
+int16_t raw2mAmps(int16_t raw)
+{
+    return CIN_GAIN * vref_mV * raw >> 16u;
 }
 
 /*******************************************************************************************************************//**
@@ -332,8 +345,9 @@ int32_t analogCph2(void)
  */
 int32_t analogCph3(void)
 {
-    int32_t raw = cph3Filter.avg >> ANALOG_AVG_FILTER_SHIFT;
-	return CIN_GAIN * vref_mV * raw >> 16u;
+    //int32_t raw = cph3Filter.avg >> ANALOG_AVG_FILTER_SHIFT;
+	//return CIN_GAIN * vref_mV * raw >> 16u;
+    return cph3Filter.avg >> ANALOG_AVG_FILTER_SHIFT;
 }
 
 /*******************************************************************************************************************//**

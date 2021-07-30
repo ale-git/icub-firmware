@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'control_foc'.
 //
-// Model version                  : 1.117
+// Model version                  : 1.120
 // Simulink Coder version         : 9.5 (R2021a) 14-Nov-2020
-// C/C++ source code generated on : Mon Jul 19 15:22:36 2021
+// C/C++ source code generated on : Fri Jul 30 09:48:35 2021
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: ARM Compatible->ARM Cortex-M
@@ -59,15 +59,16 @@ class control_focModelClass {
                        *rtu_Config_motorconfig_Vmax, const real32_T
                        *rtu_Config_motorconfig_Vcc, const real32_T
                        rtu_Sensors_motorsensors_Iabc[3], const real32_T
+                       *rtu_Sensors_motorsensors_angl_k, const real32_T
                        *rtu_Sensors_motorsensors_omeg_k, const uint8_T
-                       *rtu_Sensors_motorsensors_hall_e, const real32_T
-                       *rtu_Targets_motorcurrent_curr_c, const real32_T
-                       *rtu_Targets_motorvoltage_volt_e, const boolean_T
+                       *rtu_Sensors_motorsensors_hall_k, const real32_T
+                       *rtu_Targets_motorcurrent_curr_e, const real32_T
+                       *rtu_Targets_motorvoltage_volt_c, const boolean_T
                        *rtu_OuterOutputs_vel_en, const boolean_T
                        *rtu_OuterOutputs_cur_en, const boolean_T
                        *rtu_OuterOutputs_out_en, const real32_T
                        *rtu_OuterOutputs_motorcurrent_d, uint16_T
-                       rty_Vabc_PWM_ticks[3]);
+                       rty_Vabc_PWM_ticks[3], real32_T *rty_Iq_fbk_current);
 
   // Constructor
   control_focModelClass();
@@ -94,12 +95,13 @@ class control_focModelClass {
                     const real32_T *rtu_Vref, const boolean_T *rtu_Reset, const
                     boolean_T *rtu_Currentctrlen, const boolean_T
                     *rtu_Velocityctrlen, const boolean_T *rtu_Outputen, const
-                    real32_T rtu_Iabc_fbk[3], const real32_T *rtu_MotorConfig,
-                    const real32_T *rtu_MotorConfig_e, const real32_T
-                    *rtu_MotorConfig_i, const real32_T *rtu_MotorConfig_ig,
-                    const real32_T *rtu_MotorConfig_a, const real32_T
-                    *rtu_MotorConfig_c, const real32_T *rtu_RotorSpeed, const
-                    uint8_T *rtu_hallABC, uint16_T rty_Vabc[3]);
+                    real32_T *rtu_RotorAngle, const real32_T rtu_Iabc_fbk[3],
+                    const real32_T *rtu_MotorConfig, const real32_T
+                    *rtu_MotorConfig_e, const real32_T *rtu_MotorConfig_i, const
+                    real32_T *rtu_MotorConfig_ig, const real32_T
+                    *rtu_MotorConfig_a, const real32_T *rtu_MotorConfig_c, const
+                    real32_T *rtu_RotorSpeed, const uint8_T *rtu_hallABC,
+                    uint16_T rty_Vabc[3], real32_T *rty_Iq_fbk);
 };
 
 //-
@@ -115,9 +117,7 @@ class control_focModelClass {
 //  Block '<S8>/Data Type Propagation' : Unused code path elimination
 //  Block '<S104>/Kt' : Eliminated nontunable gain of 1
 //  Block '<S61>/Offset' : Unused code path elimination
-//  Block '<S61>/Unary_Minus' : Unused code path elimination
 //  Block '<S110>/Offset' : Unused code path elimination
-//  Block '<S110>/Unary_Minus' : Unused code path elimination
 
 
 //-

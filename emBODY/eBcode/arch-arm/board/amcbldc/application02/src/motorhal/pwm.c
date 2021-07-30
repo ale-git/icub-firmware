@@ -73,6 +73,7 @@ static volatile int32_t  hallCounter = 0;
 static volatile uint16_t hallAngle = 0;
 static volatile int16_t hallCurrentPhase = 0;
 static volatile int16_t hallCurrent = 0;
+static volatile bool calibrating = true;
 
 #ifndef ALE_WIP_REMOVE
 struct adc_callback_set_T
@@ -399,27 +400,36 @@ static void hallStatusChange_cb(TIM_HandleTypeDef *htim)
  */
 void pwmSetCurrents_cb(int16_t i1, int16_t i2, int16_t i3)
 {
-    #ifdef ALE_WIP_REMOVE
-    switch (hallCurrentPhase)
+    int16_t I[3];
+    
+    I[0] = raw2mAmps(i1);
+    I[1] = raw2mAmps(i2);
+    I[2] = raw2mAmps(i3);
+    
+    if (calibrating)
     {
-        case HALL_CURRENT_PHASE1:
-            hallCurrent = i1;
-            break;
-        case HALL_CURRENT_PHASE2:
-            hallCurrent = i2;
-            break;
-        case HALL_CURRENT_PHASE3:
-            hallCurrent = i3;
-            break;
+        static int16_t counter = 0;
+        
+        if (counter < 1000)
+        {
+            ++counter;
+            
+            analogMovingAverage(i1, i2, i3);
+        }
+        else
+        {            
+            analogSetOffsetIph1(analogCph1() + analogGetOffsetIph1());
+            analogSetOffsetIph2(analogCph2() + analogGetOffsetIph2());
+            analogSetOffsetIph3(analogCph3() + analogGetOffsetIph3());
+            
+            calibrating = false;
+        }
     }
-    #else
-    int16_t I[] = {i1, i2, i3};
     
     if (adc_callback_set.callback_fn && adc_callback_set.rtu && adc_callback_set.rty)
     {
         adc_callback_set.callback_fn(I, adc_callback_set.rtu, adc_callback_set.rty); 
     }
-    #endif
 }
 
 
@@ -553,7 +563,7 @@ uint16_t hallGetStatus(void)
  */
 int16_t hallGetCurrent(void)
 {
-    return hallStatus;
+    return hallCurrent;
 }
 
 
@@ -596,9 +606,9 @@ HAL_StatusTypeDef pwmResetFault(void)
     pwmSleep(DISABLE);
     if (GPIO_PIN_SET == HAL_GPIO_ReadPin(nMFAULT_GPIO_Port, nMFAULT_Pin))
     {
-#ifdef USE_ENCODER_SENSORS
+//#ifdef USE_ENCODER_SENSORS
         pwmPhaseEnable(PWM_PHASE_ALL);
-#endif
+//#endif
         __HAL_TIM_DISABLE_IT(&htim1, TIM_IT_BREAK);
         __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_BREAK);
         __HAL_TIM_MOE_ENABLE(&htim1); HAL_Delay(10);
@@ -624,6 +634,8 @@ HAL_StatusTypeDef pwmResetFault(void)
  */
 void pwmSet(uint16_t u, uint16_t v, uint16_t w)
 {
+    if (calibrating) u = v = w = 0;
+    
     /* Saturate arguments */
     if (u > (uint16_t)MAX_PWM) u = MAX_PWM;
     if (v > (uint16_t)MAX_PWM) v = MAX_PWM;

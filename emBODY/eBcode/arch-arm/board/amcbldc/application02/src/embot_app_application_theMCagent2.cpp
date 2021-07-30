@@ -29,7 +29,6 @@
 // - pimpl: private implementation (see scott meyers: item 22 of effective modern c++, item 31 of effective c++
 // --------------------------------------------------------------------------------------------------------------------
 
-
 struct embot::app::application::theMCagent2::Impl
 {   
     Config config {};
@@ -38,9 +37,7 @@ struct embot::app::application::theMCagent2::Impl
         
     embot::hw::motor::Position encoder {0};
     embot::hw::motor::Position hallcounter {0};
-        
-    embot::hw::motor::Pwm pwm {0};
-    int16_T current_ref = 0;
+    
     embot::prot::can::motor::polling::ControlMode cm {embot::prot::can::motor::polling::ControlMode::Idle};    
     bool applychanges {false};
     
@@ -83,32 +80,33 @@ struct embot::app::application::theMCagent2::Impl
     
     //rty_control_outer_T rty_control_outer;
     
-    
-    
     static control_focModelClass control_foc;
     
     struct rtu_control_foc_T
     {
         boolean_T rtu_Flags_PID_reset = false;
         
-        real32_T rtu_Config_motorconfig_Kp = 0.0002f;
-        real32_T rtu_Config_motorconfig_Ki = 0.0002f/4.0f;
+        real32_T rtu_Config_motorconfig_Kp =    5.f;
+        real32_T rtu_Config_motorconfig_Ki = 1250.f;
         
-        real32_T rtu_Config_motorconfig_Kbemf  = 0;
-        real32_T rtu_Config_motorconfig_Rphase = 0;
+        real32_T rtu_Config_motorconfig_Kbemf  = 0.f;
+        real32_T rtu_Config_motorconfig_Rphase = 0.f;
         
-        real32_T rtu_Config_motorconfig_Vmax = 12;
-        real32_T rtu_Config_motorconfig_Vcc  = 24;
+        real32_T rtu_Config_motorconfig_Vmax = 12.f;
+        real32_T rtu_Config_motorconfig_Vcc  = 24.f;
         
         real32_T rtu_Sensors_motorsensors_Iabc[3] = {0,0,0};
+        real32_T rtu_Sensors_motorsensors_angl_k = -30.f;
         real32_T rtu_Sensors_motorsensors_omeg_k = 0;
         uint8_T rtu_Sensors_motorsensors_hall_e  = 0;
+        
         real32_T rtu_Targets_motorcurrent_curr_c = 0;
         real32_T rtu_Targets_motorvoltage_volt_e = 0;
+        real32_T rtu_OuterOutputs_motorcurrent_d = 0;
+        
         boolean_T rtu_OuterOutputs_vel_en = 0;
         boolean_T rtu_OuterOutputs_cur_en = 0;
         boolean_T rtu_OuterOutputs_out_en = 0;
-        real32_T rtu_OuterOutputs_motorcurrent_d = 0;
     };
     
     rtu_control_foc_T rtu_control_foc;
@@ -116,6 +114,7 @@ struct embot::app::application::theMCagent2::Impl
     struct rty_control_foc_T
     {
         uint16_T rty_Vabc_PWM_ticks[3];
+        real32_T rty_Iq_fbk_current;
     };
     
     rty_control_foc_T rty_control_foc;
@@ -128,14 +127,40 @@ struct embot::app::application::theMCagent2::Impl
         rtu_control_foc_T* u = (rtu_control_foc_T*)rtu;
         rty_control_foc_T* y = (rty_control_foc_T*)rty;
         
+        real32_T avg = (Iuvw[0] + Iuvw[1] + Iuvw[2])*0.333f;
+        
+        Iuvw[0] -= avg;
+        Iuvw[1] -= avg;
+        Iuvw[2] -= avg;
+        
+        embot::hw::motor::gethallstatus(embot::hw::MOTOR::one, u->rtu_Sensors_motorsensors_hall_e);
+        
+        /*
+        static int noflood = 0;
+        if (++noflood > 28000)
+        {
+            noflood = 0;
+            static char msg[64];
+            
+            sprintf(msg, "FOC %d\n %d %f\n%u %u %u\n%d %d %d   %f\n%u\n", 
+            u->rtu_Sensors_motorsensors_hall_e,
+            current_ref, 
+            y->rty_Iq_fbk_current,
+            y->rty_Vabc_PWM_ticks[0],
+            y->rty_Vabc_PWM_ticks[1], 
+            y->rty_Vabc_PWM_ticks[2],
+            Iuvw[0],
+            Iuvw[1],
+            Iuvw[2], avg, 
+            hallperiod);
+            
+            embot::core::print(msg);
+        }
+        */
+        
         u->rtu_Sensors_motorsensors_Iabc[0] = Iuvw[0];
         u->rtu_Sensors_motorsensors_Iabc[1] = Iuvw[1];
         u->rtu_Sensors_motorsensors_Iabc[2] = Iuvw[2];
-        
-        uint16_t hallstatus;
-        embot::hw::motor::gethallstatus(embot::hw::MOTOR::one, hallstatus);
-        
-        u->rtu_Sensors_motorsensors_hall_e = hallstatus;
         
         control_foc.control_foc_ISR(
             &(u->rtu_Flags_PID_reset), 
@@ -145,7 +170,8 @@ struct embot::app::application::theMCagent2::Impl
             &(u->rtu_Config_motorconfig_Rphase), 
             &(u->rtu_Config_motorconfig_Vmax), 
             &(u->rtu_Config_motorconfig_Vcc), 
-            u->rtu_Sensors_motorsensors_Iabc, 
+            u->rtu_Sensors_motorsensors_Iabc,
+            &(u->rtu_Sensors_motorsensors_angl_k),        
             &(u->rtu_Sensors_motorsensors_omeg_k), 
             &(u->rtu_Sensors_motorsensors_hall_e), 
             &(u->rtu_Targets_motorcurrent_curr_c), 
@@ -154,9 +180,10 @@ struct embot::app::application::theMCagent2::Impl
             &(u->rtu_OuterOutputs_cur_en), 
             &(u->rtu_OuterOutputs_out_en), 
             &(u->rtu_OuterOutputs_motorcurrent_d), 
-            y->rty_Vabc_PWM_ticks
+            y->rty_Vabc_PWM_ticks,
+            &(y->rty_Iq_fbk_current)
         );
-        
+                
         embot::hw::motor::setpwmUVW(embot::hw::MOTOR::one, y->rty_Vabc_PWM_ticks[0], y->rty_Vabc_PWM_ticks[1], y->rty_Vabc_PWM_ticks[2]);
     }
     
@@ -187,20 +214,29 @@ struct embot::app::application::theMCagent2::Impl
             // in case i change the pwm ... well, we manage that in HERE
             if(embot::prot::can::motor::polling::ControlMode::Idle == cm)
             {
-                pwm = 0; //  i force pwm = 0
-                current_ref = 0;
                 rty_OuterOutputs_out_en = false;
                 rty_OuterOutputs_vel_en = false;
                 rty_OuterOutputs_cur_en = false;
+                
+                embot::hw::motor::motorDisable(embot::hw::MOTOR::one);
             }
                         
             if(embot::prot::can::motor::polling::ControlMode::Current == cm)
             {
-                pwm = 0; //  i force pwm = 0
-                current_ref = 0;
                 rty_OuterOutputs_out_en = true;
                 rty_OuterOutputs_vel_en = false;
                 rty_OuterOutputs_cur_en = true;
+                
+                embot::hw::motor::motorEnable(embot::hw::MOTOR::one);
+            }
+            
+            if(embot::prot::can::motor::polling::ControlMode::OpenLoop == cm)
+            {
+                rty_OuterOutputs_out_en = true;
+                rty_OuterOutputs_vel_en = false;
+                rty_OuterOutputs_cur_en = false;
+                
+                embot::hw::motor::motorEnable(embot::hw::MOTOR::one);
             }
             
             applychanges = false;      
@@ -236,14 +272,11 @@ struct embot::app::application::theMCagent2::Impl
         );
         */
         
+        rtu_control_foc.rtu_OuterOutputs_motorcurrent_d = rty_OuterOutputs_motorcurrent_c;
+        
         rtu_control_foc.rtu_OuterOutputs_vel_en = rty_OuterOutputs_vel_en;
         rtu_control_foc.rtu_OuterOutputs_cur_en = rty_OuterOutputs_cur_en;
         rtu_control_foc.rtu_OuterOutputs_out_en = rty_OuterOutputs_out_en;
-        
-        rty_OuterOutputs_motorcurrent_c = current_ref;
-        
-        rtu_control_foc.rtu_OuterOutputs_motorcurrent_d = rty_OuterOutputs_motorcurrent_c;
-        rtu_control_foc.rtu_OuterOutputs_motorcurrent_d = current_ref;
         
         if(embot::prot::can::motor::polling::ControlMode::Idle != cm)
         {
@@ -255,7 +288,7 @@ struct embot::app::application::theMCagent2::Impl
             
             // do whatever the MBD needs 
             // call MBD.tick
- 
+ /*
             embot::prot::can::Frame frame {};   
                             
             embot::prot::can::motor::periodic::Message_FOC msg;
@@ -270,6 +303,7 @@ struct embot::app::application::theMCagent2::Impl
             msg.load(info);
             msg.get(frame);
             outframes.push_back(frame);              
+*/
         }
         
         return true;
@@ -318,8 +352,8 @@ bool embot::app::application::theMCagent2::get(const embot::prot::can::motor::pe
 {
     embot::core::print("received EMSTO2FOC_DESIRED_CURRENT[]: " + std::to_string(info.current[0]) + ", " + std::to_string(info.current[1]) + ", " + std::to_string(info.current[2]));
  
-    //pImpl->pwm = info.current[0];
-    pImpl->current_ref = info.current[0];    
+    pImpl->rtu_control_foc.rtu_Targets_motorcurrent_curr_c = pImpl->rtu_control_foc.rtu_Targets_motorvoltage_volt_e = 0.001f*((real32_T)info.current[0]);
+    
     pImpl->applychanges = true;
     
     return true;    

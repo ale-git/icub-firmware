@@ -132,11 +132,13 @@ namespace embot { namespace hw { namespace motor {
     #ifdef ALE_WIP_REMOVE
     result_t s_hw_setpwm(MOTOR h, Pwm v);
     #else
-    uint16_t s_hw_gethallstatus(MOTOR h);
+    uint8_t s_hw_gethallstatus(MOTOR h);
     result_t s_hw_setpwmUVW(MOTOR h, Pwm u, Pwm v, Pwm w);
     result_t s_hw_setADCcallback(MOTOR h, void (*fn_cb)(int16_t[3], void*, void*), void* rtu, void* rty);
+    result_t s_hw_motorEnable(MOTOR h);
+    result_t s_hw_motorDisable(MOTOR h);
     #endif
-    
+
     result_t init(MOTOR h, const Config &config)
     {
         if(false == supported(h))
@@ -177,8 +179,25 @@ namespace embot { namespace hw { namespace motor {
         return resOK;
     }
 
+    result_t motorEnable(MOTOR h)
+    {
+        if(false == supported(h))
+        {
+            return resNOK;
+        }
+        
+        return s_hw_motorEnable(h);
+    }
     
-
+    result_t motorDisable(MOTOR h)
+    {
+        if(false == supported(h))
+        {
+            return resNOK;
+        }
+        
+        return s_hw_motorDisable(h);
+    }
     
     result_t getencoder(MOTOR h, Position &position)
     {
@@ -215,7 +234,7 @@ namespace embot { namespace hw { namespace motor {
         return s_hw_setpwm(h, v);
     }
     #else
-    result_t gethallstatus(MOTOR h, uint16_t &hs)
+    result_t gethallstatus(MOTOR h, uint8_t &hs)
     {
         if(false == initialised(h))
         {
@@ -302,7 +321,7 @@ namespace embot { namespace hw { namespace motor {
         return (HAL_OK == r) ? resOK : resNOK;
     }
     #else
-    uint16_t s_hw_gethallstatus(MOTOR h)
+    uint8_t s_hw_gethallstatus(MOTOR h)
     {
         return hallGetStatus();
     }
@@ -316,6 +335,17 @@ namespace embot { namespace hw { namespace motor {
     result_t s_hw_setADCcallback(MOTOR h, void (*fn_cb)(int16_t[3], void*, void*), void* rtu, void* rty)
     {
         setADC_cb(fn_cb, rtu, rty);
+        return resOK;
+    }
+    
+    result_t s_hw_motorEnable(MOTOR h)
+    {
+        pwmPhaseEnable(PWM_PHASE_ALL);
+        return resOK;
+    }
+    result_t s_hw_motorDisable(MOTOR h)
+    {
+        pwmPhaseDisable(PWM_PHASE_ALL);
         return resOK;
     }
     
