@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'control_foc'.
 //
-// Model version                  : 1.120
+// Model version                  : 1.125
 // Simulink Coder version         : 9.5 (R2021a) 14-Nov-2020
-// C/C++ source code generated on : Fri Jul 30 09:48:35 2021
+// C/C++ source code generated on : Wed Aug  4 00:04:39 2021
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: ARM Compatible->ARM Cortex-M
@@ -34,17 +34,19 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
   *rtu_RotorSpeed, const uint8_T *rtu_hallABC, uint16_T rty_Vabc[3], real32_T
   *rty_Iq_fbk)
 {
+  int32_T i;
+  real32_T rtb_IaIbIc0[2];
   real32_T rtb_Gain2;
   real32_T rtb_Product1;
   real32_T rtb_Product2;
   real32_T rtb_SumFdbk;
   real32_T rtb_Switch2;
-  real32_T rtb_Switch_b_idx_0;
   real32_T rtb_Unary_Minus;
   real32_T rtb_algDD_o1_p;
   real32_T rtb_algDD_o2_n;
   real32_T rtb_deg2rad;
   real32_T rtb_sum_beta;
+  real32_T tmp;
   int8_T Integrator_PrevResetState_tmp;
   boolean_T rtb_u_GTE_up;
 
@@ -66,14 +68,25 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
   // Sum: '<S1>/Add'
   rtb_Product2 += rtb_Product1;
 
+  // Gain: '<S1>/Ia+Ib+Ic=0'
+  for (i = 0; i < 2; i++) {
+    rtb_IaIbIc0[i] = 0.0F;
+    rtb_IaIbIc0[i] += rtCP_IaIbIc0_Gain[i] * rtu_Iabc_fbk[0];
+    rtb_IaIbIc0[i] += rtCP_IaIbIc0_Gain[i + 2] * rtu_Iabc_fbk[1];
+    rtb_IaIbIc0[i] += rtCP_IaIbIc0_Gain[i + 4] * rtu_Iabc_fbk[2];
+  }
+
+  // End of Gain: '<S1>/Ia+Ib+Ic=0'
+
   // Outputs for Atomic SubSystem: '<S1>/Clarke Transform'
   // AlgorithmDescriptorDelegate generated from: '<S2>/a16'
-  arm_clarke_f32(rtu_Iabc_fbk[0], rtu_Iabc_fbk[1], &rtb_algDD_o1_p,
+  arm_clarke_f32(rtb_IaIbIc0[0], rtb_IaIbIc0[1], &rtb_algDD_o1_p,
                  &rtb_algDD_o2_n);
 
   // End of Outputs for SubSystem: '<S1>/Clarke Transform'
 
-  // Sum: '<S1>/Sum4' incorporates:
+  // Sum: '<S1>/Subtract' incorporates:
+  //   Gain: '<S1>/Gain3'
   //   LookupNDDirect: '<S1>/Direct Lookup Table (n-D)1'
   //
   //  About '<S1>/Direct Lookup Table (n-D)1':
@@ -81,7 +94,8 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
   //
   //      Remove protection against out-of-range input in generated code: 'on'
 
-  rtb_Product1 = rtCP_DirectLookupTablenD1_table[*rtu_hallABC] + *rtu_RotorAngle;
+  rtb_Product1 = 0.0F * rtCP_DirectLookupTablenD1_table[*rtu_hallABC] +
+    *rtu_RotorAngle;
 
   // Gain: '<S1>/deg2rad'
   rtb_deg2rad = 0.0174532924F * rtb_Product1;
@@ -97,8 +111,8 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
   //   Sum: '<S7>/sum_Qs'
   //   UnaryMinus: '<S110>/Unary_Minus'
 
-  rtb_Switch_b_idx_0 = -(rtb_algDD_o2_n * rtb_deg2rad - rtb_algDD_o1_p *
-    rtb_Product1);
+  rtb_IaIbIc0[0] = -(rtb_algDD_o2_n * rtb_deg2rad - rtb_algDD_o1_p *
+                     rtb_Product1);
 
   // AlgorithmDescriptorDelegate generated from: '<S7>/a16' incorporates:
   //   Product: '<S7>/acos'
@@ -111,7 +125,7 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
   //   AlgorithmDescriptorDelegate generated from: '<S7>/a16'
   //   Gain: '<S1>/Gain'
 
-  rtb_sum_beta = -rtb_Switch_b_idx_0 * *rtu_MotorConfig_i;
+  rtb_sum_beta = -rtb_IaIbIc0[0] * *rtu_MotorConfig_i;
 
   // End of Outputs for SubSystem: '<S1>/Park Transform'
 
@@ -147,56 +161,56 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
   //   AlgorithmDescriptorDelegate generated from: '<S7>/a16'
   //   Gain: '<S1>/Gain'
 
-  rtb_algDD_o2_n = -rtb_Switch_b_idx_0 * *rtu_MotorConfig_a;
+  rtb_algDD_o2_n = -rtb_IaIbIc0[0] * *rtu_MotorConfig_a;
 
   // End of Outputs for SubSystem: '<S1>/Park Transform'
 
   // Signum: '<S33>/SignPreSat'
   if (rtb_algDD_o1_p < 0.0F) {
     // DataTypeConversion: '<S33>/DataTypeConv1'
-    rtb_Switch_b_idx_0 = -1.0F;
+    rtb_Switch2 = -1.0F;
   } else if (rtb_algDD_o1_p > 0.0F) {
     // DataTypeConversion: '<S33>/DataTypeConv1'
-    rtb_Switch_b_idx_0 = 1.0F;
+    rtb_Switch2 = 1.0F;
   } else if (rtb_algDD_o1_p == 0.0F) {
     // DataTypeConversion: '<S33>/DataTypeConv1'
-    rtb_Switch_b_idx_0 = 0.0F;
+    rtb_Switch2 = 0.0F;
   } else {
     // DataTypeConversion: '<S33>/DataTypeConv1'
-    rtb_Switch_b_idx_0 = (rtNaNF);
+    rtb_Switch2 = (rtNaNF);
   }
 
   // End of Signum: '<S33>/SignPreSat'
 
   // DataTypeConversion: '<S33>/DataTypeConv1'
-  if (rtIsNaNF(rtb_Switch_b_idx_0)) {
-    rtb_Switch_b_idx_0 = 0.0F;
+  if (rtIsNaNF(rtb_Switch2)) {
+    rtb_Switch2 = 0.0F;
   } else {
-    rtb_Switch_b_idx_0 = std::fmod(rtb_Switch_b_idx_0, 256.0F);
+    rtb_Switch2 = std::fmod(rtb_Switch2, 256.0F);
   }
 
   // Signum: '<S33>/SignPreIntegrator'
   if (rtb_algDD_o2_n < 0.0F) {
     // DataTypeConversion: '<S33>/DataTypeConv2'
-    rtb_Switch2 = -1.0F;
+    tmp = -1.0F;
   } else if (rtb_algDD_o2_n > 0.0F) {
     // DataTypeConversion: '<S33>/DataTypeConv2'
-    rtb_Switch2 = 1.0F;
+    tmp = 1.0F;
   } else if (rtb_algDD_o2_n == 0.0F) {
     // DataTypeConversion: '<S33>/DataTypeConv2'
-    rtb_Switch2 = 0.0F;
+    tmp = 0.0F;
   } else {
     // DataTypeConversion: '<S33>/DataTypeConv2'
-    rtb_Switch2 = (rtNaNF);
+    tmp = (rtNaNF);
   }
 
   // End of Signum: '<S33>/SignPreIntegrator'
 
   // DataTypeConversion: '<S33>/DataTypeConv2'
-  if (rtIsNaNF(rtb_Switch2)) {
-    rtb_Switch2 = 0.0F;
+  if (rtIsNaNF(tmp)) {
+    tmp = 0.0F;
   } else {
-    rtb_Switch2 = std::fmod(rtb_Switch2, 256.0F);
+    tmp = std::fmod(tmp, 256.0F);
   }
 
   // Switch: '<S33>/Switch' incorporates:
@@ -208,14 +222,13 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
   //   RelationalOperator: '<S33>/Equal1'
   //   RelationalOperator: '<S33>/NotEqual'
 
-  if ((0.0F * rtb_SumFdbk != rtb_algDD_o1_p) && ((rtb_Switch_b_idx_0 < 0.0F ?
+  if ((0.0F * rtb_SumFdbk != rtb_algDD_o1_p) && ((rtb_Switch2 < 0.0F ?
         static_cast<int32_T>(static_cast<int8_T>(-static_cast<int8_T>(
-           static_cast<uint8_T>(-rtb_Switch_b_idx_0)))) : static_cast<int32_T>(
-         static_cast<int8_T>(static_cast<uint8_T>(rtb_Switch_b_idx_0)))) ==
-       (rtb_Switch2 < 0.0F ? static_cast<int32_T>(static_cast<int8_T>(-
-          static_cast<int8_T>(static_cast<uint8_T>(-rtb_Switch2)))) :
-        static_cast<int32_T>(static_cast<int8_T>(static_cast<uint8_T>
-          (rtb_Switch2)))))) {
+           static_cast<uint8_T>(-rtb_Switch2)))) : static_cast<int32_T>(
+         static_cast<int8_T>(static_cast<uint8_T>(rtb_Switch2)))) == (tmp < 0.0F
+        ? static_cast<int32_T>(static_cast<int8_T>(-static_cast<int8_T>(
+           static_cast<uint8_T>(-tmp)))) : static_cast<int32_T>
+        (static_cast<int8_T>(static_cast<uint8_T>(tmp)))))) {
     rtb_algDD_o2_n = 0.0F;
   }
 
@@ -313,7 +326,7 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
   //   Product: '<S5>/qcos'
   //   Sum: '<S5>/sum_beta'
 
-  rtb_Switch_b_idx_0 = rtb_Gain2 * rtb_deg2rad + rtb_Switch2 * rtb_Product1;
+  rtb_IaIbIc0[0] = rtb_Gain2 * rtb_deg2rad + rtb_Switch2 * rtb_Product1;
 
   // End of Outputs for SubSystem: '<S1>/Inverse Park Transform'
 
@@ -335,7 +348,7 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
     // Gain: '<S4>/one_by_two' incorporates:
     //   AlgorithmDescriptorDelegate generated from: '<S5>/a16'
 
-    rtb_deg2rad = 0.5F * rtb_Switch_b_idx_0;
+    rtb_deg2rad = 0.5F * rtb_IaIbIc0[0];
 
     // End of Outputs for SubSystem: '<S1>/Inverse Park Transform'
 
@@ -349,8 +362,8 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
     // MinMax: '<S1>/Min' incorporates:
     //   AlgorithmDescriptorDelegate generated from: '<S5>/a16'
 
-    if ((rtb_Switch_b_idx_0 < rtb_deg2rad) || rtIsNaNF(rtb_deg2rad)) {
-      rtb_Product1 = rtb_Switch_b_idx_0;
+    if ((rtb_IaIbIc0[0] < rtb_deg2rad) || rtIsNaNF(rtb_deg2rad)) {
+      rtb_Product1 = rtb_IaIbIc0[0];
     } else {
       rtb_Product1 = rtb_deg2rad;
     }
@@ -367,51 +380,47 @@ void control_focModelClass::FOCInnerLoop(const real32_T *rtu_Iref, const
     //   AlgorithmDescriptorDelegate generated from: '<S5>/a16'
     //   Sum: '<S1>/Sum1'
 
-    rtb_Switch_b_idx_0 = (rtb_Switch_b_idx_0 - rtb_Product1) /
-      *rtu_MotorConfig_c;
+    rtb_Switch2 = (rtb_IaIbIc0[0] - rtb_Product1) / *rtu_MotorConfig_c;
 
     // End of Outputs for SubSystem: '<S1>/Inverse Park Transform'
     rtb_deg2rad = (rtb_deg2rad - rtb_Product1) / *rtu_MotorConfig_c;
     rtb_Product1 = (rtb_Gain2 - rtb_Product1) / *rtu_MotorConfig_c;
 
     // Gain: '<S1>/Gain1'
-    rtb_Switch_b_idx_0 = std::floor(16383.0F * rtb_Switch_b_idx_0);
-    if (rtIsNaNF(rtb_Switch_b_idx_0) || rtIsInfF(rtb_Switch_b_idx_0)) {
-      rtb_Switch_b_idx_0 = 0.0F;
+    rtb_Switch2 = std::floor(16383.0F * rtb_Switch2);
+    if (rtIsNaNF(rtb_Switch2) || rtIsInfF(rtb_Switch2)) {
+      rtb_Switch2 = 0.0F;
     } else {
-      rtb_Switch_b_idx_0 = std::fmod(rtb_Switch_b_idx_0, 65536.0F);
+      rtb_Switch2 = std::fmod(rtb_Switch2, 65536.0F);
     }
 
-    rty_Vabc[0] = static_cast<uint16_T>(rtb_Switch_b_idx_0 < 0.0F ? static_cast<
-      int32_T>(static_cast<uint16_T>(-static_cast<int16_T>(static_cast<uint16_T>
-      (-rtb_Switch_b_idx_0)))) : static_cast<int32_T>(static_cast<uint16_T>
-      (rtb_Switch_b_idx_0)));
+    rty_Vabc[0] = static_cast<uint16_T>(rtb_Switch2 < 0.0F ? static_cast<int32_T>
+      (static_cast<uint16_T>(-static_cast<int16_T>(static_cast<uint16_T>
+      (-rtb_Switch2)))) : static_cast<int32_T>(static_cast<uint16_T>(rtb_Switch2)));
 
     // Gain: '<S1>/Gain1'
-    rtb_Switch_b_idx_0 = std::floor(16383.0F * rtb_deg2rad);
-    if (rtIsNaNF(rtb_Switch_b_idx_0) || rtIsInfF(rtb_Switch_b_idx_0)) {
-      rtb_Switch_b_idx_0 = 0.0F;
+    rtb_Switch2 = std::floor(16383.0F * rtb_deg2rad);
+    if (rtIsNaNF(rtb_Switch2) || rtIsInfF(rtb_Switch2)) {
+      rtb_Switch2 = 0.0F;
     } else {
-      rtb_Switch_b_idx_0 = std::fmod(rtb_Switch_b_idx_0, 65536.0F);
+      rtb_Switch2 = std::fmod(rtb_Switch2, 65536.0F);
     }
 
-    rty_Vabc[1] = static_cast<uint16_T>(rtb_Switch_b_idx_0 < 0.0F ? static_cast<
-      int32_T>(static_cast<uint16_T>(-static_cast<int16_T>(static_cast<uint16_T>
-      (-rtb_Switch_b_idx_0)))) : static_cast<int32_T>(static_cast<uint16_T>
-      (rtb_Switch_b_idx_0)));
+    rty_Vabc[1] = static_cast<uint16_T>(rtb_Switch2 < 0.0F ? static_cast<int32_T>
+      (static_cast<uint16_T>(-static_cast<int16_T>(static_cast<uint16_T>
+      (-rtb_Switch2)))) : static_cast<int32_T>(static_cast<uint16_T>(rtb_Switch2)));
 
     // Gain: '<S1>/Gain1'
-    rtb_Switch_b_idx_0 = std::floor(16383.0F * rtb_Product1);
-    if (rtIsNaNF(rtb_Switch_b_idx_0) || rtIsInfF(rtb_Switch_b_idx_0)) {
-      rtb_Switch_b_idx_0 = 0.0F;
+    rtb_Switch2 = std::floor(16383.0F * rtb_Product1);
+    if (rtIsNaNF(rtb_Switch2) || rtIsInfF(rtb_Switch2)) {
+      rtb_Switch2 = 0.0F;
     } else {
-      rtb_Switch_b_idx_0 = std::fmod(rtb_Switch_b_idx_0, 65536.0F);
+      rtb_Switch2 = std::fmod(rtb_Switch2, 65536.0F);
     }
 
-    rty_Vabc[2] = static_cast<uint16_T>(rtb_Switch_b_idx_0 < 0.0F ? static_cast<
-      int32_T>(static_cast<uint16_T>(-static_cast<int16_T>(static_cast<uint16_T>
-      (-rtb_Switch_b_idx_0)))) : static_cast<int32_T>(static_cast<uint16_T>
-      (rtb_Switch_b_idx_0)));
+    rty_Vabc[2] = static_cast<uint16_T>(rtb_Switch2 < 0.0F ? static_cast<int32_T>
+      (static_cast<uint16_T>(-static_cast<int16_T>(static_cast<uint16_T>
+      (-rtb_Switch2)))) : static_cast<int32_T>(static_cast<uint16_T>(rtb_Switch2)));
   } else {
     rty_Vabc[0] = 0U;
     rty_Vabc[1] = 0U;

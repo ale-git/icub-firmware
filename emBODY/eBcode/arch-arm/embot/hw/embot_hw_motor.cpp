@@ -129,15 +129,12 @@ namespace embot { namespace hw { namespace motor {
     result_t s_hw_init(MOTOR h);
     Position s_hw_getencoder(MOTOR h);
     Position s_hw_gethallcounter(MOTOR h);
-    #ifdef ALE_WIP_REMOVE
-    result_t s_hw_setpwm(MOTOR h, Pwm v);
-    #else
+    
     uint8_t s_hw_gethallstatus(MOTOR h);
     result_t s_hw_setpwmUVW(MOTOR h, Pwm u, Pwm v, Pwm w);
     result_t s_hw_setADCcallback(MOTOR h, void (*fn_cb)(int16_t[3], void*, void*), void* rtu, void* rty);
     result_t s_hw_motorEnable(MOTOR h);
     result_t s_hw_motorDisable(MOTOR h);
-    #endif
 
     result_t init(MOTOR h, const Config &config)
     {
@@ -228,12 +225,6 @@ namespace embot { namespace hw { namespace motor {
         return resOK;               
     }
     
-    #ifdef ALE_WIP_REMOVE
-    result_t setpwm(MOTOR h, Pwm v)
-    {
-        return s_hw_setpwm(h, v);
-    }
-    #else
     result_t gethallstatus(MOTOR h, uint8_t &hs)
     {
         if(false == initialised(h))
@@ -247,11 +238,11 @@ namespace embot { namespace hw { namespace motor {
         
         return resOK;               
     }
+    
     result_t setpwmUVW(MOTOR h, Pwm u, Pwm v, Pwm w)
     {
         return s_hw_setpwmUVW(h, u, v, w);
     }
-    #endif
     
     result_t setADCcallback(MOTOR h, void (*fn_cb)(int16_t[3], void*, void*), void* rtu, void* rty)
     {
@@ -291,8 +282,8 @@ namespace embot { namespace hw { namespace motor {
         
         analogInit();
         encoderInit();
-        pwmInit();
         hallInit();
+        pwmInit();
 
         HAL_GPIO_WritePin(VAUXEN_GPIO_Port, VAUXEN_Pin, GPIO_PIN_SET);
         HAL_Delay(10); 
@@ -306,7 +297,7 @@ namespace embot { namespace hw { namespace motor {
     
     Position s_hw_getencoder(MOTOR h)
     {
-        return encoderGetCounter();
+        return encoderGetElectricalAngle();
     }
 
     Position s_hw_gethallcounter(MOTOR h)
@@ -314,23 +305,16 @@ namespace embot { namespace hw { namespace motor {
         return hallGetCounter();
     }
     
-    #ifdef ALE_WIP_REMOVE
-    result_t s_hw_setpwm(MOTOR h, Pwm v)
-    {        
-        HAL_StatusTypeDef r = pwmSetValue(v);
-        return (HAL_OK == r) ? resOK : resNOK;
-    }
-    #else
     uint8_t s_hw_gethallstatus(MOTOR h)
     {
         return hallGetStatus();
     }
+    
     result_t s_hw_setpwmUVW(MOTOR h, Pwm u, Pwm v, Pwm w)
     {        
         pwmSet(u, v, w);
         return resOK;
     }
-    #endif
     
     result_t s_hw_setADCcallback(MOTOR h, void (*fn_cb)(int16_t[3], void*, void*), void* rtu, void* rty)
     {

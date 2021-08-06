@@ -35,8 +35,8 @@ struct embot::app::application::theMCagent2::Impl
         
     bool initted {false};
         
-    embot::hw::motor::Position encoder {0};
-    embot::hw::motor::Position hallcounter {0};
+    //embot::hw::motor::Position encoder {0};
+    //embot::hw::motor::Position hallcounter {0};
     
     embot::prot::can::motor::polling::ControlMode cm {embot::prot::can::motor::polling::ControlMode::Idle};    
     bool applychanges {false};
@@ -96,7 +96,7 @@ struct embot::app::application::theMCagent2::Impl
         real32_T rtu_Config_motorconfig_Vcc  = 24.f;
         
         real32_T rtu_Sensors_motorsensors_Iabc[3] = {0,0,0};
-        real32_T rtu_Sensors_motorsensors_angl_k = -30.f;
+        real32_T rtu_Sensors_motorsensors_angl_k = 0;
         real32_T rtu_Sensors_motorsensors_omeg_k = 0;
         uint8_T rtu_Sensors_motorsensors_hall_e  = 0;
         
@@ -126,41 +126,29 @@ struct embot::app::application::theMCagent2::Impl
     {
         rtu_control_foc_T* u = (rtu_control_foc_T*)rtu;
         rty_control_foc_T* y = (rty_control_foc_T*)rty;
-        
-        real32_T avg = (Iuvw[0] + Iuvw[1] + Iuvw[2])*0.333f;
-        
-        Iuvw[0] -= avg;
-        Iuvw[1] -= avg;
-        Iuvw[2] -= avg;
-        
+                
         embot::hw::motor::gethallstatus(embot::hw::MOTOR::one, u->rtu_Sensors_motorsensors_hall_e);
         
-        /*
-        static int noflood = 0;
+        embot::hw::motor::Position electricalAngle;
+        embot::hw::motor::getencoder(embot::hw::MOTOR::one, electricalAngle);
+        
+        u->rtu_Sensors_motorsensors_angl_k = real32_T(electricalAngle)*0.0054931640625f;
+        
+        static int noflood = 27000;
         if (++noflood > 28000)
         {
             noflood = 0;
             static char msg[64];
             
-            sprintf(msg, "FOC %d\n %d %f\n%u %u %u\n%d %d %d   %f\n%u\n", 
-            u->rtu_Sensors_motorsensors_hall_e,
-            current_ref, 
-            y->rty_Iq_fbk_current,
-            y->rty_Vabc_PWM_ticks[0],
-            y->rty_Vabc_PWM_ticks[1], 
-            y->rty_Vabc_PWM_ticks[2],
-            Iuvw[0],
-            Iuvw[1],
-            Iuvw[2], avg, 
-            hallperiod);
+            sprintf(msg, "FOC %d %f\n", 
+            u->rtu_Sensors_motorsensors_hall_e,u->rtu_Sensors_motorsensors_angl_k);
             
             embot::core::print(msg);
         }
-        */
         
-        u->rtu_Sensors_motorsensors_Iabc[0] = Iuvw[0];
-        u->rtu_Sensors_motorsensors_Iabc[1] = Iuvw[1];
-        u->rtu_Sensors_motorsensors_Iabc[2] = Iuvw[2];
+        u->rtu_Sensors_motorsensors_Iabc[0] = 0.001f*Iuvw[0];
+        u->rtu_Sensors_motorsensors_Iabc[1] = 0.001f*Iuvw[1];
+        u->rtu_Sensors_motorsensors_Iabc[2] = 0.001f*Iuvw[2];
         
         control_foc.control_foc_ISR(
             &(u->rtu_Flags_PID_reset), 
@@ -282,8 +270,8 @@ struct embot::app::application::theMCagent2::Impl
         {
             // add status of motor...
             
-            embot::hw::motor::getencoder(embot::hw::MOTOR::one, encoder);
-            embot::hw::motor::gethallcounter(embot::hw::MOTOR::one, hallcounter);
+            //embot::hw::motor::getencoder(embot::hw::MOTOR::one, encoder);
+            //embot::hw::motor::gethallcounter(embot::hw::MOTOR::one, hallcounter);
             
             
             // do whatever the MBD needs 

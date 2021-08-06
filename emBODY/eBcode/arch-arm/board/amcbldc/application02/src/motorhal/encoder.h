@@ -46,7 +46,12 @@ typedef struct
 extern HAL_StatusTypeDef encoderInit(void);
 extern uint32_t encoderGetCounter(void);
 extern uint16_t encoderGetElectricalAngle(void);
+extern void encoderSetElectricalOffset(uint16_t);
+extern uint16_t encoderGetElectricalOffset(void);
+extern void encoderMoveElectricalOffset(uint16_t);
 
+void encoderForce(uint16_t value);
+void encoderCalibrate(uint16_t angle);
 
 #ifdef __cplusplus
     } /* extern "C" */
