@@ -177,7 +177,12 @@ void encoderForce(uint16_t value)
 
 void encoderCalibrate(uint16_t angle)
 {
-    if (encoderCalibrated) return;
+    if (encoderCalibrated)
+    {
+        electricalOffset += (angle - (electricalOffset + (__HAL_TIM_GET_COUNTER(&htim2) * encoderConvFactor) & 0xFFFF)) / 128;
+            
+        return;
+    }
     
     electricalOffset = angle - (__HAL_TIM_GET_COUNTER(&htim2) * encoderConvFactor) & 0xFFFF;
     

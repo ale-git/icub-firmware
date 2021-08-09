@@ -166,6 +166,7 @@ static const uint16_t hallAngleTable[] =
 static uint8_t updateHallStatus(void)
 {
     hallStatus_old = hallStatus;
+    static bool uncalibrated = true;
     
     /* Read current value of HALL1, HALL2 and HALL3 signals in bits 2..0 */
     hallStatus = (((HALL1_GPIO_Port->IDR & HALL1_Pin) >> MSB(HALL1_Pin)) << 2)
@@ -175,37 +176,42 @@ static uint8_t updateHallStatus(void)
     int16_t sector = hallSectorTable[hallStatus];
     static int16_t sector_old = sector;
     
+    uint16_t angle = hallAngleTable[hallStatus];
+    
     if (!hallStatus_old)
-    {    
-        uint16_t angle = hallAngleTable[hallStatus];
-        
+    {            
         hallCounter = 0;
-        
+    
         encoderForce(angle);
     }
     else
-    {
-        if (hallCounter > 7 || hallCounter < -7)
+    {        
+        if (((sector-sector_old+6)%6)==1) // forward
         {
-            if (sector > sector_old || (sector_old == 5 && sector == 0))
-            {
-                ++hallCounter;
-            }
-            else
-            {
-                --hallCounter;
-            }
-         
-            uint16_t angle = hallAngleTable[hallStatus];
-            encoderForce(angle);
+            ++hallCounter;
+            
+            angle -= 5461; // -30 deg
         }
         else
         {
-            uint16_t angle = (hallAngleTable[hallStatus] + hallAngleTable[hallStatus_old])/2;
+            --hallCounter;
+            
+            angle += 5461; // +30 deg
+        }
+        
+        if (uncalibrated && -50 < hallCounter && hallCounter < 50) // > npoles*6
+        {
+            encoderForce(angle);
+        }
+        else
+        {   
             encoderCalibrate(angle);
+            
+            uncalibrated = false;
         }
     }
     
+    sector_old = sector;
     hallStatus_old = hallStatus;
     
     return hallStatus;
