@@ -12,6 +12,8 @@
 #include "motorhal_config.h"
 #endif
 
+ #include "embot_core.h"
+
 #if defined(USE_STM32HAL) 
 // API
 #include "pwm.h"
@@ -108,12 +110,12 @@ constexpr int16_t hallSectorTable[] =
 {
     /* ABC  (°)  */
     /* LLL ERROR */ 0,
-    /* LLH  270  */ 5, /* 54613 */
-    /* LHL  150  */ 3, /* 32768 */
-    /* LHH  210  */ 4, /* 43690 */
-    /* HLL   30  */ 1, /* 10923 */
-    /* HLH  -30  */ 0, /*     0 */
-    /* HHL   90  */ 2, /* 21845 */
+    /* LLH  270  */ 4, /* 54613 */
+    /* LHL  150  */ 2, /* 32768 */
+    /* LHH  210  */ 3, /* 43690 */
+    /* HLL   30  */ 0, /* 10923 */
+    /* HLH  -30  */ 5, /*     0 */
+    /* HHL   90  */ 1, /* 21845 */
     /* HHH ERROR */ static_cast<uint16_t>(0)
 };
 
@@ -166,7 +168,10 @@ static const uint16_t hallAngleTable[] =
 static uint8_t updateHallStatus(void)
 {
     hallStatus_old = hallStatus;
-    static bool uncalibrated = true;
+    static int8_t calibration_step = 0;
+    
+    static uint16_t border[6]={0};
+    static uint8_t border_flag = 0;
     
     /* Read current value of HALL1, HALL2 and HALL3 signals in bits 2..0 */
     hallStatus = (((HALL1_GPIO_Port->IDR & HALL1_Pin) >> MSB(HALL1_Pin)) << 2)
@@ -185,8 +190,10 @@ static uint8_t updateHallStatus(void)
         encoderForce(angle);
     }
     else
-    {        
-        if (((sector-sector_old+6)%6)==1) // forward
+    {
+        bool forward = ((sector-sector_old+6)%6)==1;
+        
+        if (forward) // forward
         {
             ++hallCounter;
             
@@ -199,16 +206,48 @@ static uint8_t updateHallStatus(void)
             angle += 5461; // +30 deg
         }
         
-        if (uncalibrated && -50 < hallCounter && hallCounter < 50) // > npoles*6
+        if (calibration_step == 0)
         {
             encoderForce(angle);
-        }
-        else
-        {   
-            encoderCalibrate(angle);
             
-            uncalibrated = false;
+            if (hallCounter < -50 || hallCounter > 50) // > npoles*6
+            {
+                // now the optical encoder is Index calibrated
+                calibration_step = 1;
+            }
         }
+        else if (calibration_step == 1)
+        {
+            encoderForce(angle);
+            
+            uint8_t s = forward ? sector : (sector+1)%6;
+            
+            border[s] = encoderGetUncalibrated();
+            
+            border_flag |= 1<<s;
+            
+            if (border_flag == 63)
+            {
+                calibration_step = 2;
+                
+                int32_t offset = int16_t(border[0]);
+                offset += int16_t(border[1]-10923);
+                offset += int16_t(border[2]-21845);
+                offset += int16_t(border[3]-32768);
+                offset += int16_t(border[4]-43691);
+                offset += int16_t(border[5]-54613);
+                
+                offset /= 6;
+                     
+                embot::core::print("CALIBRATED\n");
+            
+                encoderCalibrate(-int16_t(offset));
+            }
+        }
+        //else if (calibration_step == 2)
+        //{   
+        //    encoderCalibrate(angle);
+        //}
     }
     
     sector_old = sector;

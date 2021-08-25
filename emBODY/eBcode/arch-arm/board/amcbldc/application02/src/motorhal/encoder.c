@@ -164,6 +164,11 @@ uint16_t encoderGetElectricalAngle(void)
     return encoderForcedValue;
 }
 
+uint16_t encoderGetUncalibrated(void)
+{
+    return (__HAL_TIM_GET_COUNTER(&htim2) * encoderConvFactor) & 0xFFFF;
+}
+
 /*******************************************************************************************************************//**
  * @brief   Set encoder electrical-angle offset
  * @param   uint16_t    Encoder offset
@@ -175,39 +180,22 @@ void encoderForce(uint16_t value)
     encoderForcedValue = value;
 }
 
-void encoderCalibrate(uint16_t angle)
+void encoderCalibrate(uint16_t offset)
 {
-    if (encoderCalibrated)
-    {
-        electricalOffset += (angle - (electricalOffset + (__HAL_TIM_GET_COUNTER(&htim2) * encoderConvFactor) & 0xFFFF)) / 128;
-            
-        return;
-    }
+    char msg[32];
     
-    electricalOffset = angle - (__HAL_TIM_GET_COUNTER(&htim2) * encoderConvFactor) & 0xFFFF;
+    sprintf(msg,"offset=%d\n",offset);
+    
+    embot::core::print(msg);
+    
+    electricalOffset = offset;
     
     encoderCalibrated = true;
-}
-
-void encoderSetElectricalOffset(uint16_t offset)
-{
-    electricalOffset = offset;
 }
 
 uint16_t encoderGetElectricalOffset()
 {
     return electricalOffset;
 }
-
-/*******************************************************************************************************************//**
- * @brief   Increase encoder electrical-angle offset
- * @param   uint16_t    Encoder offset increment
- * @return  void
- */
-void encoderMoveElectricalOffset(uint16_t offset_inc)
-{
-    electricalOffset += offset_inc;
-}
-
 
 /* END OF FILE ********************************************************************************************************/
