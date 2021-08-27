@@ -33,6 +33,8 @@ extern "C" {
 
 #include "WatchDog.h"
 #include "Pid.h"
+    
+#define MOTOR_POS_UNAVAIL 0x7FFFFFFF
 
 typedef struct //CanOdometry2FocMsg
 {
@@ -209,7 +211,6 @@ typedef struct //Motor
     
     PID trqPID;
     
-    BOOL not_init;
     BOOL not_calibrated;
     BOOL hardware_fault;
     
@@ -285,6 +286,7 @@ extern void Motor_set_vel_ref(Motor* o, int32_t vel_ref);
 extern void Motor_get_pid_state(Motor* o, eOmc_joint_status_ofpid_t* pid_state);
 extern void Motor_get_state(Motor* o, eOmc_motor_status_t* motor_status);
 extern void Motor_update_pos_fbk(Motor* o, int32_t position_raw);
+extern int32_t Motor_get_pos_fbk(Motor* o);
 extern void Motor_update_current_fbk(Motor* o, int16_t current);
 
 extern void Motor_set_i2t_fault(Motor* o);

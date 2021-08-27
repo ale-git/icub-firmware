@@ -29,12 +29,29 @@
 
 #include "EOtheMAIS.h"
 
+#include "Motor.h"
+
 /////////////////////////////////////////////////////////
 // AbsEncoder
 
 
 #define AEA_MIN_SPIKE 16 //4 bitsof zero padding(aea use 12 bits)
           
+static void send_message(char *message, BOOL warning, uint8_t jid, uint16_t par16, uint64_t par64)
+{
+    eOerrmanDescriptor_t errdes = {0};
+
+    errdes.code             = eoerror_code_get(eoerror_category_Debug, eoerror_value_DEB_tag01);
+    errdes.sourcedevice     = eo_errman_sourcedevice_localboard;
+    errdes.sourceaddress    = jid;
+    errdes.par16            = par16;
+    errdes.par64            = par64;
+    eo_errman_Error(eo_errman_GetHandle(), warning ? eo_errortype_warning : eo_errortype_debug, message, NULL, &errdes);
+
+}         
+
+#define DEBUG_MESSAGE(msg,jid,par16,par64) send_message(msg,FALSE,jid,par16,par64)
+#define WARNING_MESSAGE(msg,jid,par16,par64) send_message(msg,TRUE,jid,par16,par64)
 
 AbsEncoder* AbsEncoder_new(uint8_t n)
 {
@@ -57,9 +74,11 @@ void AbsEncoder_init(AbsEncoder* o)
     o->spike_cnt_limit = 32767;
     o->spike_mag_limit = 32767;
     
-    //o->sign = 0;
-    o->mul = 0;
-    o->div = 1;
+    o->sign = 0;
+    //o->mul = 0;
+    //o->div = 1;
+    o->gearbox = 1.0f;
+    o->GEARBOX = FALSE;
     o->toleranceCfg = 0.0;
     
     o->fake = FALSE;
@@ -121,9 +140,9 @@ void s_AbsEncoder_set_spikes_limis(AbsEncoder* o)
             #define AEA_MIN_SPIKE 16 //iDegree 
             /* Note: AEA has 12 bits of resolution, so we pad with four zero to transform from AEA unit to iDegree */
             if(toleranceIDeg < AEA_MIN_SPIKE)
-                o->spike_mag_limit = AEA_MIN_SPIKE * o->div;
+                o->spike_mag_limit = AEA_MIN_SPIKE / o->gearbox;
             else
-                o->spike_mag_limit = toleranceIDeg *o->div;
+                o->spike_mag_limit = toleranceIDeg / o->gearbox;
             
             o->spike_cnt_limit = AEA_DEFAULT_SPIKE_CNT_LIMIT;
             
@@ -137,7 +156,7 @@ void s_AbsEncoder_set_spikes_limis(AbsEncoder* o)
         {
             
             int32_t toleranceIDeg = (int32_t)((o->toleranceCfg * 65535.0f) / 360.0f);
-            o->spike_mag_limit = toleranceIDeg *o->div;
+            o->spike_mag_limit = toleranceIDeg / o->gearbox;
             o->spike_cnt_limit = AEA_DEFAULT_SPIKE_CNT_LIMIT; //ALE ??
             //snprintf(message, sizeof(message), "AMO: tol%.3f, div%.3f spikel%lu", o->toleranceCfg, o->div, o->spike_mag_limit);
         }break;        
@@ -164,27 +183,11 @@ void AbsEncoder_config(AbsEncoder* o, uint8_t ID, int32_t resolution, float32_t 
 {
     o->ID = ID;
     
-    //o->fake = FALSE;
-
-//    if(o->type != type)
-//    {
-//        eOerrmanDescriptor_t descriptor = {0};
-//        char str[50];
-//        snprintf(str, 50, "missmach encoder type: xmlFile=%d. fw=%d", type, o->type);
-//        descriptor.par16 = o->ID;
-//        descriptor.par64 = 0;
-//        descriptor.sourcedevice = eo_errman_sourcedevice_localboard;
-//        descriptor.sourceaddress = 0;
-//        descriptor.code = eoerror_code_get(eoerror_category_Debug, eoerror_value_DEB_tag00);
-//        eo_errman_Error(eo_errman_GetHandle(), eo_errortype_debug, str, NULL, &descriptor);
-//        return;
-//    }
-    
     AbsEncoder_config_resolution(o, (float)resolution);
     
     if (!o->fake)
     {
-       o->toleranceCfg = tolerance;
+        o->toleranceCfg = tolerance;
         s_AbsEncoder_set_spikes_limis(o);
     }
     else
@@ -199,29 +202,40 @@ void AbsEncoder_config_resolution(AbsEncoder* o, float resolution)
 {
     if (!o->fake)
     {
-        //o->sign = resolution >= 0 ? 1 : -1;
-        o->mul = resolution >= 0 ? 1 : -1;
+        o->sign = (resolution >= 0.0f) ? 1 : -1;
     }
     else
     {
-        //o->sign = 1;
-        o->mul = o->div = 1;
+        //o->mul = o->div = 1;
+        o->sign = 1;
+        o->gearbox = 1.0f;
+        o->GEARBOX = FALSE;
     }
 }
 
 extern void AbsEncoder_config_divisor(AbsEncoder* o, float32_t divisor)
 {
-    o->div = divisor;
+    //o->div = divisor;
     
-    //i need to re config spikes limits because they depend on divisor also.
-    if (!o->fake)
-        s_AbsEncoder_set_spikes_limis(o);
+    if (divisor == 1.0f || divisor == 0.0f)
+    {
+        o->gearbox = 1.0f;
+        o->GEARBOX = FALSE;
+    }
+    else
+    {
+        o->gearbox = 1.0f/divisor;
+        o->GEARBOX = TRUE;
+    }
+    
+    //i need to re config spikes limits because they depend on divisor also. (NO...)
+    if (!o->fake) s_AbsEncoder_set_spikes_limis(o);
 }
 
 void AbsEncoder_start_hard_stop_calibrate(AbsEncoder* o, int32_t hard_stop_zero)
 {
     o->offset = 0;
-    o->zero = 0;
+    o->fine_tuning = 0;
     
     o->hard_stop_zero = hard_stop_zero;
     
@@ -235,7 +249,8 @@ void AbsEncoder_calibrate_in_hard_stop(AbsEncoder* o)
 {
     o->offset = 0;
 
-    o->zero = (o->mul*o->distance)/o->div - o->hard_stop_zero;  
+    //o->fine_tuning = (o->mul*o->distance)/o->div - o->hard_stop_zero;
+    o->fine_tuning = (o->sign*o->distance)*o->gearbox - o->hard_stop_zero;    
     
     o->state.bits.not_calibrated  = FALSE;
     o->state.bits.hard_stop_calib = FALSE;
@@ -246,14 +261,17 @@ BOOL AbsEncoder_is_hard_stop_calibrating(AbsEncoder* o)
     return o->state.bits.hard_stop_calib;
 }
 
-void AbsEncoder_calibrate_absolute(AbsEncoder* o, int32_t offset, int32_t zero)
+//void AbsEncoder_calibrate_absolute(AbsEncoder* o, int32_t offset, int32_t fine_tuning)
+void AbsEncoder_calibrate_absolute(AbsEncoder* o, uint16_t offset, int16_t fine_tuning)
 {
     o->offset = offset;
-    o->zero = zero;
+    o->fine_tuning = fine_tuning;
     
+    // (???
     uint16_t position = o->position_sure;
     position -= o->offset;
     o->distance = position;
+    // ???)
     
     o->state.bits.not_calibrated  = FALSE;
     o->state.bits.hard_stop_calib = FALSE;
@@ -266,21 +284,60 @@ void AbsEncoder_calibrate_fake(AbsEncoder* o)
 
 int32_t AbsEncoder_position(AbsEncoder* o)
 {
-    return (o->mul*o->distance)/o->div - o->zero;
+    //return (o->mul*o->distance)/o->div - o->fine_tuning;
+    return o->joint_angle - o->fine_tuning;
 }
 
 int32_t AbsEncoder_velocity(AbsEncoder* o)
 {
-    return (o->mul*o->velocity)/o->div;
+    if (o->GEARBOX) return (o->sign*o->velocity)*o->gearbox;
+    
+    return o->sign*o->velocity;
 }
 
 void AbsEncoder_posvel(AbsEncoder* o, int32_t* position, int32_t* velocity)
 {
-    *position = (o->mul*o->distance)/o->div - o->zero;
-    *velocity = (o->mul*o->velocity)/o->div;
+    *position = o->joint_angle - o->fine_tuning;
+    
+    if (o->GEARBOX)
+    { 
+        *velocity = (o->sign*o->velocity)*o->gearbox;
+    }
+    else
+    {
+        *velocity = o->sign*o->velocity;
+    }    
 }
 
-//static void AbsEncoder_position_init(AbsEncoder* o, int32_t position)
+static void AbsEncoder_position_init_amo(AbsEncoder* o, int32_t joint_angle, int32_t motor_angle)
+{
+    if (!o->valid_first_data_cnt)
+    {
+        o->joint_angle_last = joint_angle;
+    }
+    
+    if (o->joint_angle_last != joint_angle)
+    {
+        o->valid_first_data_cnt = 0;
+        
+        return;
+    }
+    
+    if (++o->valid_first_data_cnt >= 3)
+    {
+        o->joint_angle_last = joint_angle;
+        o->joint_angle = joint_angle;
+        
+        o->motor_offset = joint_angle - motor_angle;
+
+        o->valid_first_data_cnt = 0;
+        
+        o->state.bits.not_initialized = FALSE;
+        
+        DEBUG_MESSAGE("AMO INITIALIZED", o->ID, o->motor_offset, (((uint64_t)joint_angle)<<32)|motor_angle);
+    }
+}
+
 static void AbsEncoder_position_init_aea(AbsEncoder* o, uint16_t position)
 {
     
@@ -333,10 +390,9 @@ static void AbsEncoder_position_init_others(AbsEncoder* o, uint16_t position)
     o->valid_first_data_cnt = 0;
     
     o->state.bits.not_initialized = FALSE;
-
 }
 
-static void AbsEncoder_position_init(AbsEncoder* o, uint16_t position)
+static void AbsEncoder_position_init(AbsEncoder* o, uint16_t position, int32_t joint_angle, int32_t motor_angle)
 {
     if (!o) return;
     
@@ -345,9 +401,11 @@ static void AbsEncoder_position_init(AbsEncoder* o, uint16_t position)
     switch(o->type)
     {
         // marco.accame on 16 dec 2020: i assume eomc_enc_pos is similar to aea and other absolute encoders 
+        case eomc_enc_amo:
+            AbsEncoder_position_init_amo(o, joint_angle, motor_angle);
+            break;
         case eomc_enc_pos:
         case eomc_enc_aea:
-        case eomc_enc_amo:
         case eomc_enc_psc:
             AbsEncoder_position_init_aea(o, position);
             break;
@@ -453,11 +511,74 @@ void AbsEncoder_still_check_reset(AbsEncoder* o)
     o->partial_space = 0;
 }
 
-void AbsEncoder_update(AbsEncoder* o, uint16_t position)
+// AMOs
+
+static void AbsEncoder_update_amo(AbsEncoder* o, uint16_t raw_sensor, int32_t motor_angle)
 {
     if (!o) return;
         
     if (o->fake) return;
+    
+    if (o->state.bits.not_configured) return;
+    
+    if (motor_angle == MOTOR_POS_UNAVAIL) return;
+    
+    o->invalid_cnt = 0;
+    o->timeout_cnt = 0;
+    
+    // calibrated, [-32768,32767] normalized
+    int16_t sensor_angle = (raw_sensor - o->offset)*o->sign;
+    int32_t joint_angle = o->GEARBOX ? o->gearbox*sensor_angle : sensor_angle;
+    
+    if (o->state.bits.not_initialized)
+    {
+        AbsEncoder_position_init(o, joint_angle, motor_angle);
+        
+        return;
+    }
+    
+    motor_angle += o->motor_offset;
+    
+    o->amo_error = abs(motor_angle - joint_angle) > 182; // 1 deg
+    
+    if (o->amo_error)
+    {
+        o->joint_angle = motor_angle;
+        
+        o->spike_cnt++;
+    }
+    else
+    {
+        o->joint_angle = joint_angle;
+    }
+    
+    static int noflood[] = {0,250,500,750};
+    
+    if (noflood[o->ID]++ > 1000)
+    {
+        noflood[o->ID] = 0;
+        
+        if (o->spike_cnt)
+        {
+            o->spike_cnt = 0;
+        
+            WARNING_MESSAGE("AMO RECOVERY", o->ID, o->spike_cnt, (((uint64_t)joint_angle)<<32)|motor_angle);
+        }
+    }
+}
+
+static void AbsEncoder_update_aea(AbsEncoder* o, uint16_t position)
+{
+    if (!o) return;
+        
+    if (o->fake) return;
+
+    if (o->type == eomc_enc_amo)
+    {
+        AbsEncoder_update_amo(o, position);
+        
+        return;
+    }
     
     if (o->state.bits.not_configured) return;
     
@@ -538,104 +659,9 @@ void AbsEncoder_update(AbsEncoder* o, uint16_t position)
     }
 }
 
-/*
-void AbsEncoder_update(AbsEncoder* o, int32_t position)
+void AbsEncoder_update(AbsEncoder* o, uint16_t position)
 {
-    if (!o) return;
-        
-    if (o->fake) return;
-    
-    if (o->state.bits.not_configured) return;
-    
-    if (o->state.bits.not_calibrated) return;
-    
-    position -= o->offset;
-    
-    if (position<0)
-    {
-        position += 65536L;
-    }
-    else if (position>=65536L)
-    {
-        position -= 65536L;
-    }
-    
-    o->invalid_cnt = 0;
-    o->timeout_cnt = 0;
-    
-    if (o->state.bits.not_initialized)
-    {
-        AbsEncoder_position_init(o, position);
-        
-        o->velocity = 0;
-        
-        return;
-    }
-    
-    int32_t check = position - o->position_last;
-    
-    while (check<-32768) check+=65536;    
-    while (check> 32768) check-=65536;
-    
-    o->position_last = position;
-
-    if (-o->spike_mag_limit <= check && check <= o->spike_mag_limit)
-    {
-        int32_t delta = position - o->position_sure;
-
-        while (delta<-32768) delta+=65536;        
-        while (delta> 32768) delta-=65536;
-        
-        if (delta)
-        {
-            o->position_sure = position;
-                
-            o->delta = delta;
-                
-            o->distance += o->delta;
-                
-            o->velocity = (7*o->velocity + ((int32_t)CTRL_LOOP_FREQUENCY)*o->delta) >> 3;
-        }
-        else
-        {
-            o->velocity = (7*o->velocity) >> 3;
-        }
-    }
-    else
-    {
-        o->spike_cnt++;
-       
-        o->velocity = (7*o->velocity) >> 3;
-    }
-        
-    //every second
-    
-    eOemsrunner_diagnosticsinfo_t* runner_info = eom_emsrunner_GetDiagnosticsInfoHandle(eom_emsrunner_GetHandle());
-    
-    if ((runner_info->numberofperiods % 1000) == 0)
-    {
-        if (o->spike_cnt > 0)
-        {                
-            //message "spike encoder error"
-            eOerrmanDescriptor_t descriptor = {0};
-            descriptor.par16 = o->ID;           
-            descriptor.par64 = o->spike_cnt;
-            descriptor.sourcedevice = eo_errman_sourcedevice_localboard;
-            descriptor.sourceaddress = 0;
-            descriptor.code = eoerror_code_get(eoerror_category_MotionControl, eoerror_value_MC_aea_abs_enc_spikes);
-            eo_errman_Error(eo_errman_GetHandle(), eo_errortype_warning, NULL, NULL, &descriptor);
-                
-            if (o->spike_cnt > o->spike_cnt_limit)
-            {
-                o->fault_state.bits.spikes = TRUE;
-                o->hardware_fault = TRUE;
-            }
-            
-            o->spike_cnt = 0;
-        }
-    }
 }
-*/
 
 void AbsEncoder_overwrite(AbsEncoder* o, int32_t position, int32_t velocity)
 {
@@ -659,6 +685,13 @@ BOOL AbsEncoder_is_calibrated(AbsEncoder* o)
 {
     return !o->state.bits.not_calibrated;
 }
+
+
+
+
+
+
+
 
 static void AbsEncoder_send_error(uint8_t id, eOerror_value_MC_t err_id, uint64_t mask)
 {

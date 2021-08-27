@@ -182,7 +182,6 @@ static eOresult_t JointSet_do_wait_calibration_6_singleJoint(JointSet *o, int in
                 //reset value of position
                 m_ptr->pos_fbk = m_ptr->pos_fbk - m_ptr->pos_calib_offset;
                 m_ptr->pos_fbk_old = 0;
-                m_ptr->not_init = TRUE;
                 
 //                /////Debug code
 //                char message[150];
@@ -402,10 +401,6 @@ BOOL JointSet_do_wait_calibration_8(JointSet* o)
         o->motor[o->motors_of_set[0]].pos_fbk = o->tripod_calib.zero;
         o->motor[o->motors_of_set[1]].pos_fbk = o->tripod_calib.zero;
         o->motor[o->motors_of_set[2]].pos_fbk = o->tripod_calib.zero;
-
-        o->motor[o->motors_of_set[0]].not_init = FALSE;
-        o->motor[o->motors_of_set[1]].not_init = FALSE;
-        o->motor[o->motors_of_set[2]].not_init = FALSE;
         
         o->motor[o->motors_of_set[0]].pos_fbk_old = o->motor[o->motors_of_set[0]].pos_fbk;
         o->motor[o->motors_of_set[1]].pos_fbk_old = o->motor[o->motors_of_set[1]].pos_fbk;
@@ -502,10 +497,6 @@ BOOL JointSet_do_wait_calibration_9(JointSet* o)
         o->motor[o->motors_of_set[0]].pos_fbk = o->tripod_calib.zero;
         o->motor[o->motors_of_set[1]].pos_fbk = o->tripod_calib.zero;
         o->motor[o->motors_of_set[2]].pos_fbk = o->tripod_calib.zero;
-        
-        o->motor[o->motors_of_set[0]].not_init = FALSE;
-        o->motor[o->motors_of_set[1]].not_init = FALSE;
-        o->motor[o->motors_of_set[2]].not_init = FALSE;
 
         o->motor[o->motors_of_set[0]].pos_fbk_old = o->motor[o->motors_of_set[0]].pos_fbk;
         o->motor[o->motors_of_set[1]].pos_fbk_old = o->motor[o->motors_of_set[1]].pos_fbk;
@@ -566,6 +557,38 @@ BOOL JointSet_do_wait_calibration_9(JointSet* o)
 }
 
 BOOL JointSet_do_wait_calibration_10(JointSet* o)
+{
+    BOOL calibrated = TRUE;
+    
+    for (int k=0; k<*(o->pN); ++k)
+    {
+        int m = o->motors_of_set[k];
+        
+        int e = o->encoders_of_set[k];
+        
+        if (AbsEncoder_is_hard_stop_calibrating(o->absEncoder+e))
+        {
+            Motor_set_pwm_ref(o->motor+m, o->motor[m].calib_pwm);
+        
+            if (AbsEncoder_is_still(o->absEncoder+e, 12000, 500))
+            {
+                AbsEncoder_calibrate_in_hard_stop(o->absEncoder+e);
+            }
+            else
+            {
+                calibrated = FALSE;
+            }
+        }
+        else
+        {
+            Motor_set_pwm_ref(o->motor+m, 0);
+        }
+    }
+    
+    return calibrated;
+}
+
+BOOL JointSet_do_wait_calibration_14(JointSet* o)
 {
     BOOL calibrated = TRUE;
     

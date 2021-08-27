@@ -1586,9 +1586,9 @@ void JointSet_calibrate(JointSet* o, uint8_t e, eOmc_calibrator_t *calibrator)
         case eomc_calibration_type11_cer_hands:
         {   
             AbsEncoder* enc = o->absEncoder + 3*e;
-            AbsEncoder_calibrate_absolute(enc  , calibrator->params.type11.offset0, enc[0].mul*32767);
-            AbsEncoder_calibrate_absolute(enc+1, calibrator->params.type11.offset1, enc[1].mul*32767);
-            AbsEncoder_calibrate_absolute(enc+2, calibrator->params.type11.offset2, enc[2].mul*32767);
+            AbsEncoder_calibrate_absolute(enc  , calibrator->params.type11.offset0, enc[0].sign*32767);
+            AbsEncoder_calibrate_absolute(enc+1, calibrator->params.type11.offset1, enc[1].sign*32767);
+            AbsEncoder_calibrate_absolute(enc+2, calibrator->params.type11.offset2, enc[2].sign*32767);
             
             JointSet_do_odometry(o);
             
@@ -1654,6 +1654,58 @@ void JointSet_calibrate(JointSet* o, uint8_t e, eOmc_calibrator_t *calibrator)
             break;
         }
         
+        case eomc_calibration_type14_absolute_sensor:
+        {
+            /*
+            int32_t offset;
+            int32_t zero;
+            eOmc_joint_config_t *jointcfg = eo_entities_GetJointConfig(eo_entities_GetHandle(), e);
+            
+            //1) Take absolute value of calibation parametr
+            int32_t abs_raw = (calibrator->params.type12.rawValueAtZeroPos > 0) ? calibrator->params.type12.rawValueAtZeroPos : -calibrator->params.type12.rawValueAtZeroPos;
+            // 1.1) update abs_raw with gearbox_E2J
+            abs_raw = abs_raw * jointcfg->gearbox_E2J;
+            // 2) calculate offset
+            if(abs_raw >= TICKS_PER_HALF_REVOLUTION)
+                offset = abs_raw - TICKS_PER_HALF_REVOLUTION;
+            else
+                offset = abs_raw + TICKS_PER_HALF_REVOLUTION;
+            
+            // 3) find out sign of zero
+            
+            if(jointcfg->jntEncoderResolution > 0)
+                zero = TICKS_PER_HALF_REVOLUTION / jointcfg->gearbox_E2J;
+            else
+                zero = -TICKS_PER_HALF_REVOLUTION / jointcfg->gearbox_E2J;
+            
+            zero+=calibrator->params.type12.calibrationDelta;  //this parameter should contain only the delta
+            */
+            
+            
+            
+            // 4) call calibration function
+            
+            ////debug code
+            //char info[80];
+            //snprintf(info, sizeof(info), "CALIB 12 j %d: offset=%d zero=%d ", e, offset, zero);
+            //JointSet_send_debug_message(info, e, 0, 0);
+            ////debug code ended
+            
+            //eOmc_joint_config_t *jointcfg = eo_entities_GetJointConfig(eo_entities_GetHandle(), e);
+            
+            uint16_t offset = (uint16_t)abs(calibrator->params.type12.rawValueAtZeroPos);
+            int16_t fine_tuning = (int16_t)calibrator->params.type12.calibrationDelta;
+            
+            AbsEncoder_calibrate_absolute(o->absEncoder+e, offset, fine_tuning);
+            
+            
+            Motor_calibrate_withOffset(o->motor+e, 0);
+            Motor_set_run(o->motor+e, o->postrj_ctrl_out_type);
+            o->calibration_in_progress = (eOmc_calibration_type_t)calibrator->type;
+
+            break;
+        }
+        
         case eomc_calibration_type13_cer_hands_2:
         {
             AbsEncoder* enc = o->absEncoder + 4*e;
@@ -1665,10 +1717,10 @@ void JointSet_calibrate(JointSet* o, uint8_t e, eOmc_calibrator_t *calibrator)
             //rawValueAtZeroPos[2] = calibrator->params.type13.rawValueAtZeroPos2;
             //rawValueAtZeroPos[3] = calibrator->params.type13.rawValueAtZeroPos3;
             
-            AbsEncoder_calibrate_absolute(enc  , calibrator->params.type13.rawValueAtZeroPos0, enc[0].mul*32767);
-            AbsEncoder_calibrate_absolute(enc+1, calibrator->params.type13.rawValueAtZeroPos1, enc[1].mul*32767);
-            AbsEncoder_calibrate_absolute(enc+2, calibrator->params.type13.rawValueAtZeroPos2, enc[2].mul*32767);
-            AbsEncoder_calibrate_absolute(enc+3, calibrator->params.type13.rawValueAtZeroPos3, enc[3].mul*32767);
+            AbsEncoder_calibrate_absolute(enc  , calibrator->params.type13.rawValueAtZeroPos0, enc[0].sign*32767);
+            AbsEncoder_calibrate_absolute(enc+1, calibrator->params.type13.rawValueAtZeroPos1, enc[1].sign*32767);
+            AbsEncoder_calibrate_absolute(enc+2, calibrator->params.type13.rawValueAtZeroPos2, enc[2].sign*32767);
+            AbsEncoder_calibrate_absolute(enc+3, calibrator->params.type13.rawValueAtZeroPos3, enc[3].sign*32767);
             
             /*
             for (int k=0; k<4; ++k)
