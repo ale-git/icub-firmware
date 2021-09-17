@@ -64,15 +64,12 @@ typedef struct //AbsEncoder
     //int16_t sensor_angle;
     int32_t joint_angle;
     int32_t joint_angle_last;
-    //int32_t motor_angle;
+    uint16_t raw_sensor;
+    int32_t motor_angle;
+    int32_t motor_delta;
     int32_t motor_offset;
     
     BOOL amo_error;
-    
-    
-    
-    
-    
     
     uint32_t partial_timer;
     int32_t  partial_space;
@@ -130,27 +127,22 @@ typedef struct //AbsEncoder
     /////////////////////////////////////////////////////////
     
     // AMOs
-    int32_t motor_position;
-    int16_t motor_velocity;
-    int32_t motor_position_offset;
+    
+    //int32_t motor_position;
+    //int16_t motor_velocity;
+    //int32_t motor_position_offset;
     
 } AbsEncoder;
-
-// AMOs
-extern void AbsEncoder_update_motor_fbk(AbsEncoder* o, int32_t motor_position, int16_t motor_velocity);
 
 extern AbsEncoder* AbsEncoder_new(uint8_t n);
 extern void AbsEncoder_init(AbsEncoder* o);
 extern void AbsEncoder_destroy(AbsEncoder* o);
 
 extern void AbsEncoder_config(AbsEncoder* o, uint8_t ID, int32_t resolution, float32_t tolerance);
-//extern void AbsEncoder_calibrate_absolute(AbsEncoder* o, int32_t offset, int32_t zero);
 extern void AbsEncoder_calibrate_absolute(AbsEncoder* o, uint16_t offset, int16_t fine_tuning);
 extern void AbsEncoder_calibrate_fake(AbsEncoder* o);
 
-//extern void AbsEncoder_update(AbsEncoder* o, int32_t position);
-extern void AbsEncoder_update(AbsEncoder* o, uint16_t raw_sensor, int32_t motor_position);
-extern void AbsEncoder_update(AbsEncoder* o, uint16_t position);
+extern void AbsEncoder_update(AbsEncoder* o, uint16_t raw_sensor, int32_t motor_position, BOOL motor_position_ok);
 extern void AbsEncoder_invalid(AbsEncoder* o, eOencoderreader_errortype_t error_type);
 
 extern void AbsEncoder_config_resolution(AbsEncoder* o, float resolution);
@@ -167,15 +159,22 @@ extern BOOL AbsEncoder_is_calibrated(AbsEncoder* o);
 extern BOOL AbsEncoder_is_in_fault(AbsEncoder* o);
 extern void AbsEncoder_clear_faults(AbsEncoder* o);
 
-extern void AbsEncoder_overwrite(AbsEncoder* o, int32_t position, int32_t velocity);
+
 extern BOOL AbsEncoder_is_fake(AbsEncoder* o);
 
 
 // used only with calibration 10
-extern BOOL AbsEncoder_is_still(AbsEncoder* o, int32_t space_window, int32_t time_window);
-extern void AbsEncoder_still_check_reset(AbsEncoder* o);
+
+// caller void JointSet_calibrate(JointSet* o, uint8_t e, eOmc_calibrator_t *calibrator)
 extern void AbsEncoder_start_hard_stop_calibrate(AbsEncoder* o, int32_t hard_stop_zero);
+
+// caller BOOL JointSet_do_wait_calibration_10(JointSet* o)
+extern BOOL AbsEncoder_is_still(AbsEncoder* o, int32_t space_window, int32_t time_window);
+
+// caller BOOL JointSet_do_wait_calibration_10(JointSet* o)
 extern BOOL AbsEncoder_is_hard_stop_calibrating(AbsEncoder* o);
+
+// caller BOOL JointSet_do_wait_calibration_10(JointSet* o)
 extern void AbsEncoder_calibrate_in_hard_stop(AbsEncoder* o);
 
 #ifdef __cplusplus

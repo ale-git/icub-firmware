@@ -588,38 +588,6 @@ BOOL JointSet_do_wait_calibration_10(JointSet* o)
     return calibrated;
 }
 
-BOOL JointSet_do_wait_calibration_14(JointSet* o)
-{
-    BOOL calibrated = TRUE;
-    
-    for (int k=0; k<*(o->pN); ++k)
-    {
-        int m = o->motors_of_set[k];
-        
-        int e = o->encoders_of_set[k];
-        
-        if (AbsEncoder_is_hard_stop_calibrating(o->absEncoder+e))
-        {
-            Motor_set_pwm_ref(o->motor+m, o->motor[m].calib_pwm);
-        
-            if (AbsEncoder_is_still(o->absEncoder+e, 12000, 500))
-            {
-                AbsEncoder_calibrate_in_hard_stop(o->absEncoder+e);
-            }
-            else
-            {
-                calibrated = FALSE;
-            }
-        }
-        else
-        {
-            Motor_set_pwm_ref(o->motor+m, 0);
-        }
-    }
-    
-    return calibrated;
-}
-
 BOOL JointSet_do_wait_calibration_11(JointSet* o)
 {
     BOOL calibrated = TRUE;

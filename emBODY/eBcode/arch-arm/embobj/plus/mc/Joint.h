@@ -145,6 +145,8 @@ typedef struct // Joint
     CTRL_UNITS pos_fbk_from_motors;
     CTRL_UNITS vel_fbk_from_motors;
     
+    BOOL pos_fbk_from_motors_avail;
+    
     CTRL_UNITS pos_err;
     CTRL_UNITS vel_err;
     CTRL_UNITS trq_err;    

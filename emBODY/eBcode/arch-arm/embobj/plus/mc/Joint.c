@@ -69,6 +69,7 @@ void Joint_init(Joint* o)
     
     o->pos_fbk_from_motors = ZERO;
     o->vel_fbk_from_motors = ZERO;
+    o->pos_fbk_from_motors_avail = FALSE;
     
     o->out_ref = ZERO;
     o->pos_ref = ZERO;

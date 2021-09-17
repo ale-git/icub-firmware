@@ -1264,9 +1264,9 @@ void Motor_update_pos_fbk(Motor* o, int32_t position_raw)
     o->pos_raw_cal_fbk = o->pos_fbk*o->GEARBOX;
 }
 
-int32_t Motor_get_pos_fbk(Motor* o)
+int32_t Motor_get_pos_fbk(Motor* o, BOOL* valid)
 {
-    if (o->not_calibrated) return MOTOR_POS_UNAVAIL;
+    if (o->not_calibrated) *valid = FALSE;
     
     return o->pos_fbk;
 }

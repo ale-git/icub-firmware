@@ -89,6 +89,13 @@ void AbsEncoder_init(AbsEncoder* o)
     o->position_last = 0;
     o->position_sure = 0;
     
+    o->raw_sensor = 0;
+    o->joint_angle = 0;
+    o->joint_angle_last = 0;
+    
+    o->motor_delta = 0;
+    o->motor_angle = 0;
+    
     o->velocity = 0;
 
     o->delta = 0;
@@ -232,46 +239,22 @@ extern void AbsEncoder_config_divisor(AbsEncoder* o, float32_t divisor)
     if (!o->fake) s_AbsEncoder_set_spikes_limis(o);
 }
 
-void AbsEncoder_start_hard_stop_calibrate(AbsEncoder* o, int32_t hard_stop_zero)
-{
-    o->offset = 0;
-    o->fine_tuning = 0;
-    
-    o->hard_stop_zero = hard_stop_zero;
-    
-    o->distance = o->position_sure;
-    
-    o->state.bits.not_calibrated  = TRUE;
-    o->state.bits.hard_stop_calib = TRUE;
-}
-
-void AbsEncoder_calibrate_in_hard_stop(AbsEncoder* o)
-{
-    o->offset = 0;
-
-    //o->fine_tuning = (o->mul*o->distance)/o->div - o->hard_stop_zero;
-    o->fine_tuning = (o->sign*o->distance)*o->gearbox - o->hard_stop_zero;    
-    
-    o->state.bits.not_calibrated  = FALSE;
-    o->state.bits.hard_stop_calib = FALSE;
-}
-
-BOOL AbsEncoder_is_hard_stop_calibrating(AbsEncoder* o)
-{
-    return o->state.bits.hard_stop_calib;
-}
-
-//void AbsEncoder_calibrate_absolute(AbsEncoder* o, int32_t offset, int32_t fine_tuning)
 void AbsEncoder_calibrate_absolute(AbsEncoder* o, uint16_t offset, int16_t fine_tuning)
 {
     o->offset = offset;
     o->fine_tuning = fine_tuning;
-    
-    // (???
-    uint16_t position = o->position_sure;
-    position -= o->offset;
-    o->distance = position;
-    // ???)
+        
+    if (eomc_enc_amo == o->type)
+    {
+        //int16_t sensor_angle = (o->raw_sensor - o->offset)*o->sign;
+        //o->joint_angle = o->GEARBOX ? o->gearbox*sensor_angle : sensor_angle;
+    }
+    else
+    {
+        uint16_t position = o->position_sure;
+        position -= o->offset;
+        o->distance = position;
+    }
     
     o->state.bits.not_calibrated  = FALSE;
     o->state.bits.hard_stop_calib = FALSE;
@@ -284,8 +267,14 @@ void AbsEncoder_calibrate_fake(AbsEncoder* o)
 
 int32_t AbsEncoder_position(AbsEncoder* o)
 {
-    //return (o->mul*o->distance)/o->div - o->fine_tuning;
-    return o->joint_angle - o->fine_tuning;
+    if (eomc_enc_amo == o->type)
+    {
+        return o->joint_angle - o->fine_tuning;
+    }
+    
+    if (o->GEARBOX) return (o->sign*o->distance)*o->gearbox - o->fine_tuning;
+    
+    return (o->sign*o->distance) - o->fine_tuning;
 }
 
 int32_t AbsEncoder_velocity(AbsEncoder* o)
@@ -297,7 +286,21 @@ int32_t AbsEncoder_velocity(AbsEncoder* o)
 
 void AbsEncoder_posvel(AbsEncoder* o, int32_t* position, int32_t* velocity)
 {
-    *position = o->joint_angle - o->fine_tuning;
+    if (eomc_enc_amo == o->type)
+    {
+        *position = o->joint_angle - o->fine_tuning;
+    }
+    else
+    {
+        if (o->GEARBOX)
+        {
+            *position = (o->sign*o->distance)*o->gearbox - o->fine_tuning;
+        }
+        else 
+        {
+            *position = (o->sign*o->distance) - o->fine_tuning;
+        }
+    } 
     
     if (o->GEARBOX)
     { 
@@ -340,7 +343,6 @@ static void AbsEncoder_position_init_amo(AbsEncoder* o, int32_t joint_angle, int
 
 static void AbsEncoder_position_init_aea(AbsEncoder* o, uint16_t position)
 {
-    
     if (!o->valid_first_data_cnt)
     {
         o->position_last = position;
@@ -372,7 +374,6 @@ static void AbsEncoder_position_init_aea(AbsEncoder* o, uint16_t position)
     }
 }
 
-
 static void AbsEncoder_position_init_others(AbsEncoder* o, uint16_t position)
 {
     //mais doesn't need an init procedure like aea encoder
@@ -390,34 +391,6 @@ static void AbsEncoder_position_init_others(AbsEncoder* o, uint16_t position)
     o->valid_first_data_cnt = 0;
     
     o->state.bits.not_initialized = FALSE;
-}
-
-static void AbsEncoder_position_init(AbsEncoder* o, uint16_t position, int32_t joint_angle, int32_t motor_angle)
-{
-    if (!o) return;
-    
-    if (o->fake) return;
-    
-    switch(o->type)
-    {
-        // marco.accame on 16 dec 2020: i assume eomc_enc_pos is similar to aea and other absolute encoders 
-        case eomc_enc_amo:
-            AbsEncoder_position_init_amo(o, joint_angle, motor_angle);
-            break;
-        case eomc_enc_pos:
-        case eomc_enc_aea:
-        case eomc_enc_psc:
-            AbsEncoder_position_init_aea(o, position);
-            break;
-        
-        case eomc_enc_mais:
-        case eomc_enc_absanalog:
-            AbsEncoder_position_init_others(o, position);
-            break;
-            
-        default:
-            return;
-    };
 }
 
 void AbsEncoder_timeout(AbsEncoder* o)
@@ -488,40 +461,11 @@ void AbsEncoder_invalid(AbsEncoder* o, eOencoderreader_errortype_t error_type)
     o->valid_first_data_cnt = 0;
 }
 
-BOOL AbsEncoder_is_still(AbsEncoder* o, int32_t space_window, int32_t time_window)
-{
-    o->partial_space += (int32_t)o->delta;
-    
-    BOOL still = FALSE;
-    
-    if (++o->partial_timer > time_window)
-    {        
-        still = abs(o->partial_space) < space_window;
-        
-        o->partial_timer = 0;
-        o->partial_space = 0;
-    }
-    
-    return still;
-}
-
-void AbsEncoder_still_check_reset(AbsEncoder* o)
-{
-    o->partial_timer = 0;
-    o->partial_space = 0;
-}
-
 // AMOs
 
-static void AbsEncoder_update_amo(AbsEncoder* o, uint16_t raw_sensor, int32_t motor_angle)
-{
-    if (!o) return;
-        
-    if (o->fake) return;
-    
-    if (o->state.bits.not_configured) return;
-    
-    if (motor_angle == MOTOR_POS_UNAVAIL) return;
+static void AbsEncoder_update_amo(AbsEncoder* o, uint16_t raw_sensor, int32_t motor_angle, BOOL motor_position_ok)
+{    
+    if (!motor_position_ok) return;
     
     o->invalid_cnt = 0;
     o->timeout_cnt = 0;
@@ -532,64 +476,59 @@ static void AbsEncoder_update_amo(AbsEncoder* o, uint16_t raw_sensor, int32_t mo
     
     if (o->state.bits.not_initialized)
     {
-        AbsEncoder_position_init(o, joint_angle, motor_angle);
+        AbsEncoder_position_init_amo(o, joint_angle, motor_angle);
         
         return;
     }
     
+    o->raw_sensor = raw_sensor;
+    
+    o->motor_delta = motor_angle - o->motor_angle;
+    o->motor_angle = motor_angle;
+    
     motor_angle += o->motor_offset;
+    
+    BOOL amo_error = o->amo_error;
     
     o->amo_error = abs(motor_angle - joint_angle) > 182; // 1 deg
     
     if (o->amo_error)
     {
         o->joint_angle = motor_angle;
-        
-        o->spike_cnt++;
     }
     else
     {
         o->joint_angle = joint_angle;
     }
     
-    static int noflood[] = {0,250,500,750};
-    
-    if (noflood[o->ID]++ > 1000)
+    if (amo_error != o->amo_error)
     {
-        noflood[o->ID] = 0;
-        
-        if (o->spike_cnt)
+        if (o->amo_error)
         {
-            o->spike_cnt = 0;
-        
-            WARNING_MESSAGE("AMO RECOVERY", o->ID, o->spike_cnt, (((uint64_t)joint_angle)<<32)|motor_angle);
+            WARNING_MESSAGE("AMO RECOVERY", o->ID, o->ID, (((uint64_t)joint_angle)<<32) | (((uint64_t)motor_angle) & 0xFFFFFFFF));
+        }
+        else
+        {
+            WARNING_MESSAGE("AMO OK", o->ID, o->ID, (((uint64_t)joint_angle)<<32) | (((uint64_t)motor_angle) & 0xFFFFFFFF));
         }
     }
 }
 
 static void AbsEncoder_update_aea(AbsEncoder* o, uint16_t position)
-{
-    if (!o) return;
-        
-    if (o->fake) return;
-
-    if (o->type == eomc_enc_amo)
-    {
-        AbsEncoder_update_amo(o, position);
-        
-        return;
-    }
-    
-    if (o->state.bits.not_configured) return;
-    
-    //if (o->state.bits.not_calibrated) return;
-    
+{    
     o->invalid_cnt = 0;
     o->timeout_cnt = 0;
     
     if (o->state.bits.not_initialized)
     {
-        AbsEncoder_position_init(o, position);
+        if (eomc_enc_mais == o->type || eomc_enc_absanalog == o->type) 
+        {
+            AbsEncoder_position_init_others(o, position);
+        }
+        else
+        {
+            AbsEncoder_position_init_aea(o, position);
+        }
         
         o->velocity = 0;
         
@@ -659,16 +598,23 @@ static void AbsEncoder_update_aea(AbsEncoder* o, uint16_t position)
     }
 }
 
-void AbsEncoder_update(AbsEncoder* o, uint16_t position)
+void AbsEncoder_update(AbsEncoder* o, uint16_t raw_sensor, int32_t motor_position, BOOL motor_position_ok)
 {
-}
-
-void AbsEncoder_overwrite(AbsEncoder* o, int32_t position, int32_t velocity)
-{
-    if (!o->fake) return;
+    if (!o) return;
+        
+    if (o->fake) return;
     
-    o->distance = position - o->offset;
-    o->velocity = velocity;
+    if (o->state.bits.not_configured) return;
+    
+    if (o->type == eomc_enc_amo)
+    {
+        AbsEncoder_update_amo(o, raw_sensor, motor_position, motor_position_ok);
+        
+        return;
+    }
+    
+    //if (o->type == eomc_enc_aea)
+    AbsEncoder_update_aea(o, raw_sensor);
 }
 
 BOOL AbsEncoder_is_fake(AbsEncoder* o)
@@ -760,6 +706,85 @@ void AbsEncoder_clear_faults(AbsEncoder* o)
     
     o->spike_cnt = 0;
 }
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+//
+
+// caller void JointSet_calibrate(JointSet* o, uint8_t e, eOmc_calibrator_t *calibrator)
+void AbsEncoder_start_hard_stop_calibrate(AbsEncoder* o, int32_t hard_stop_zero)
+{
+    // still check reset
+    o->partial_timer = 0;
+    o->partial_space = 0;
+    
+    o->offset = 0;
+    o->fine_tuning = 0;
+    
+    o->hard_stop_zero = hard_stop_zero;
+    
+    o->distance = o->position_sure;
+    //o->joint_angle = ?
+    
+    o->state.bits.not_calibrated  = TRUE;
+    o->state.bits.hard_stop_calib = TRUE;
+}
+
+BOOL AbsEncoder_is_still(AbsEncoder* o, int32_t space_window, int32_t time_window)
+{
+    if(eomc_enc_amo == o->type)
+    {
+        o->partial_space += (int32_t)o->motor_delta;
+    }
+    else
+    {
+        o->partial_space += (int32_t)o->delta;
+    }
+    
+    BOOL still = FALSE;
+    
+    if (++o->partial_timer > time_window)
+    {        
+        still = abs(o->partial_space) < space_window;
+        
+        o->partial_timer = 0;
+        o->partial_space = 0;
+    }
+    
+    return still;
+}
+
+BOOL AbsEncoder_is_hard_stop_calibrating(AbsEncoder* o)
+{
+    return o->state.bits.hard_stop_calib;
+}
+
+void AbsEncoder_calibrate_in_hard_stop(AbsEncoder* o)
+{
+    o->offset = 0;
+
+    if(eomc_enc_amo == o->type)
+    {
+        send_message("HARD STOP CALIBRATED!!!", TRUE, o->ID, o->raw_sensor, o->hard_stop_zero);
+        
+        o->fine_tuning = (o->sign*o->raw_sensor)*o->gearbox - o->hard_stop_zero;
+    }
+    else
+    {
+        //o->fine_tuning = (o->mul*o->distance)/o->div - o->hard_stop_zero;
+        o->fine_tuning = (o->sign*o->distance)*o->gearbox - o->hard_stop_zero;    
+    }
+    
+    o->state.bits.not_calibrated  = FALSE;
+    o->state.bits.hard_stop_calib = FALSE;
+}
+
+//
+///////////////////////////////////////////////////////////////////////////////////////
+
+
+
 
 // AbsEncoder
 /////////////////////////////////////////////////////////

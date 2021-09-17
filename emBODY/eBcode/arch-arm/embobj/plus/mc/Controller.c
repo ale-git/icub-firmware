@@ -1056,10 +1056,7 @@ void MController_update_absEncoder_fbk(uint8_t e, uint32_t* positions) //
     
     for (int k=0; k<smc->multi_encs; ++k)
     {
-        // (???
-        AbsEncoder_update(enc + k, (uint16_t)positions[k], Motor_get_pos_fbk(smc->motor+e));
-        //AbsEncoder_update(enc + k, (uint16_t)positions[k]);
-        // ???)
+        AbsEncoder_update(enc + k, (uint16_t)positions[k], smc->joint[e].pos_fbk_from_motors, smc->joint[e].pos_fbk_from_motors_avail);
     }
     
 #ifdef R1_HAND
