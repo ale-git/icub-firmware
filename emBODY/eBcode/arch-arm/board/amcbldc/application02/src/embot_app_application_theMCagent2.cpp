@@ -25,6 +25,9 @@
 
 #include "embot_app_theCANboardInfo.h"
 
+#include "encoder.h"
+#include "pwm.h"
+
 // --------------------------------------------------------------------------------------------------------------------
 // - pimpl: private implementation (see scott meyers: item 22 of effective modern c++, item 31 of effective c++
 // --------------------------------------------------------------------------------------------------------------------
@@ -86,13 +89,13 @@ struct embot::app::application::theMCagent2::Impl
     {
         boolean_T rtu_Flags_PID_reset = false;
         
-        real32_T rtu_Config_motorconfig_Kp =    5.f;
-        real32_T rtu_Config_motorconfig_Ki = 1250.f;
+        real32_T rtu_Config_motorconfig_Kp =    2.f;
+        real32_T rtu_Config_motorconfig_Ki =  500.f;
         
         real32_T rtu_Config_motorconfig_Kbemf  = 0.f;
         real32_T rtu_Config_motorconfig_Rphase = 0.f;
         
-        real32_T rtu_Config_motorconfig_Vmax = 12.f;
+        real32_T rtu_Config_motorconfig_Vmax =  9.f;
         real32_T rtu_Config_motorconfig_Vcc  = 24.f;
         
         real32_T rtu_Sensors_motorsensors_Iabc[3] = {0,0,0};
@@ -119,6 +122,8 @@ struct embot::app::application::theMCagent2::Impl
     
     rty_control_foc_T rty_control_foc;
     
+    static embot::prot::can::motor::periodic::Message_FOC::Info info; 
+    
     
     Impl() = default;
     
@@ -132,24 +137,22 @@ struct embot::app::application::theMCagent2::Impl
         embot::hw::motor::Position electricalAngle;
         embot::hw::motor::getencoder(embot::hw::MOTOR::one, electricalAngle);
         
-        u->rtu_Sensors_motorsensors_angl_k = real32_T(electricalAngle)*0.0054931640625f;
+        static uint16_t electricalAngleOld = electricalAngle;
+        int16_t delta = electricalAngle - electricalAngleOld;
+        electricalAngleOld = electricalAngle;
         
-        static int noflood = 27000;
-        if (++noflood > 28000)
-        {
-            noflood = 0;
-            static char msg[64];
-            
-            sprintf(msg, "FOC %d %f\n", 
-            u->rtu_Sensors_motorsensors_hall_e,u->rtu_Sensors_motorsensors_angl_k);
-            
-            embot::core::print(msg);
-        }
+        static real32_T speed = 0;
+        
+        speed = 0.9f*speed + 0.1f*(real32_T(delta));
+        
+        //speed = real32_T(delta);
+        
+        u->rtu_Sensors_motorsensors_angl_k = real32_T(electricalAngle)*0.0054931640625f;
         
         u->rtu_Sensors_motorsensors_Iabc[0] = 0.001f*Iuvw[0];
         u->rtu_Sensors_motorsensors_Iabc[1] = 0.001f*Iuvw[1];
         u->rtu_Sensors_motorsensors_Iabc[2] = 0.001f*Iuvw[2];
-        
+                
         control_foc.control_foc_ISR(
             &(u->rtu_Flags_PID_reset), 
             &(u->rtu_Config_motorconfig_Kp), 
@@ -172,7 +175,37 @@ struct embot::app::application::theMCagent2::Impl
             &(y->rty_Iq_fbk_current)
         );
                 
+            real32_T Va = y->rty_Vabc_PWM_ticks[0];
+            real32_T Vb = y->rty_Vabc_PWM_ticks[1];
+            real32_T Vc = y->rty_Vabc_PWM_ticks[2];
+                    
+            real32_T Vavg = 0.333f*(Va+Vb+Vc);
+            
+            Va -= Vavg;
+            Vb -= Vavg;
+            Vc -= Vavg;
+                    
+            info.canaddress = embot::app::theCANboardInfo::getInstance().cachedCANaddress();   
+            info.current = int16_t(1000.0f*y->rty_Iq_fbk_current);
+            info.velocity = int16_t(10.0f*speed); 
+            info.position = (int32_t(Va)<<20) | (int32_t(Vb)<<10) | int16_t(Vc);  
+                
         embot::hw::motor::setpwmUVW(embot::hw::MOTOR::one, y->rty_Vabc_PWM_ticks[0], y->rty_Vabc_PWM_ticks[1], y->rty_Vabc_PWM_ticks[2]);
+        
+        static int noflood = 0;
+        if (++noflood > 28000)
+        {
+            noflood = 0;
+            static char msg[128];
+            
+            sprintf(msg, "FOC hall = %d elang = %f\n  Iq* = %f Iq = %f\n  speed = %f\n", 
+                u->rtu_Sensors_motorsensors_hall_e, u->rtu_Sensors_motorsensors_angl_k,
+                u->rtu_Targets_motorcurrent_curr_c, y->rty_Iq_fbk_current, 
+                10.0f*speed);      
+            
+            
+            embot::core::print(msg);              
+        }
     }
     
     bool initialise()
@@ -276,22 +309,16 @@ struct embot::app::application::theMCagent2::Impl
             
             // do whatever the MBD needs 
             // call MBD.tick
- /*
+ 
             embot::prot::can::Frame frame {};   
                             
             embot::prot::can::motor::periodic::Message_FOC msg;
-            embot::prot::can::motor::periodic::Message_FOC::Info info;  
-
             
-            info.canaddress = embot::app::theCANboardInfo::getInstance().cachedCANaddress();   
-            info.current = pwm;
-            info.velocity = 1; 
-            info.position = encoder;                
+            info.canaddress = embot::app::theCANboardInfo::getInstance().cachedCANaddress();                 
             
             msg.load(info);
             msg.get(frame);
             outframes.push_back(frame);              
-*/
         }
         
         return true;
@@ -299,6 +326,7 @@ struct embot::app::application::theMCagent2::Impl
 };
 
 control_focModelClass embot::app::application::theMCagent2::Impl::control_foc;
+embot::prot::can::motor::periodic::Message_FOC::Info embot::app::application::theMCagent2::Impl::info;
 
 // --------------------------------------------------------------------------------------------------------------------
 // - the class
