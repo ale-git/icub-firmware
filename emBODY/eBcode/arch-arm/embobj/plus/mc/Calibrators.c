@@ -560,6 +560,16 @@ BOOL JointSet_do_wait_calibration_10(JointSet* o)
 {
     BOOL calibrated = TRUE;
     
+    for (int ms=0; ms<*(o->pN); ++ms)
+    {
+        if (!Motor_is_calibrated(o->motor+o->motors_of_set[ms])) 
+        {
+            calibrated = FALSE;
+        }
+    }
+    
+    if (!calibrated) return FALSE;
+    
     for (int k=0; k<*(o->pN); ++k)
     {
         int m = o->motors_of_set[k];
