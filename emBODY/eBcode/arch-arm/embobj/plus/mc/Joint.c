@@ -134,6 +134,11 @@ void Joint_init(Joint* o)
 #endif
 
     Joint_reset_calibration_data(o);
+    
+#ifdef ERGOJOINT
+    o->torque_model.initialize();
+    o->joint_motor_offset = 0;
+#endif
 }
 
 void Joint_reset_calibration_data(Joint* o)

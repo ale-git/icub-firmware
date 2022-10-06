@@ -158,6 +158,12 @@ extern BOOL Joint_set_pos_ref_in_calibType6(Joint* o, CTRL_UNITS pos_ref, CTRL_U
 //VALE: debug function. I'll remove it ASAP
 //extern void Joint_update_debug_current_info(Joint *o, int32_t avgCurrent, int32_t accum_Ep);
 
+#ifdef ERGOJOINT
+extern float Joint_compute_torque(int32_t joint_pos, int32_t motor_pos);
+extern void  Joint_set_joint_motor_offset(int32_t offset);
+extern void  Joint_set_position_raw(int32_t position);
+#endif
+
 #ifdef __cplusplus
 }       // closing brace for extern "C"
 #endif 

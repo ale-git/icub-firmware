@@ -183,7 +183,6 @@
             <RvdsVP>2</RvdsVP>
             <RvdsMve>0</RvdsMve>
             <RvdsCdeCp>0</RvdsCdeCp>
-            <nBranchProt>0</nBranchProt>
             <hadIRAM2>1</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
@@ -788,7 +787,7 @@
             </File>
             <File>
               <FileName>overridden_controller.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\cfg\eoemsappl\overridden_controller.c</FilePath>
             </File>
             <File>
@@ -853,12 +852,12 @@
             </File>
             <File>
               <FileName>EOtheMotionController.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOtheMotionController.c</FilePath>
             </File>
             <File>
               <FileName>EOtheEncoderReader.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOtheEncoderReader.c</FilePath>
             </File>
             <File>
@@ -868,7 +867,7 @@
             </File>
             <File>
               <FileName>EOCurrentsWatchdog.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOCurrentsWatchdog.c</FilePath>
             </File>
             <File>
@@ -1178,7 +1177,7 @@
             </File>
             <File>
               <FileName>EoProtocolMC_fun_ems4rd.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\cfg\eoprot-callbacks\EoProtocolMC_fun_ems4rd.c</FilePath>
             </File>
           </Files>
@@ -1218,7 +1217,7 @@
             </File>
             <File>
               <FileName>EoCANprotMCperiodic.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\can\config-can-protocol\EoCANprotMCperiodic.c</FilePath>
             </File>
             <File>
@@ -1329,6 +1328,21 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>torquemodel</GroupName>
+          <Files>
+            <File>
+              <FileName>TorqueModel.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\torquemodel\TorqueModel.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>TorqueModel_capi.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\torquemodel\TorqueModel_capi.cpp</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>::CMSIS</GroupName>
           <GroupOption>
             <CommonProperty>
@@ -1412,7 +1426,7 @@
         <TargetCommonOption>
           <Device>STM32F407IG</Device>
           <Vendor>STMicroelectronics</Vendor>
-          <PackID>Keil.STM32F4xx_DFP.2.16.0</PackID>
+          <PackID>Keil.STM32F4xx_DFP.2.15.0</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
           <Cpu>IRAM(0x20000000-0x2001FFFF) IRAM2(0x10000000-0x1000FFFF) IROM(0x8000000-0x80FFFFF) CLOCK(25000000) CPUTYPE("Cortex-M4") FPU2</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -1582,7 +1596,6 @@
             <RvdsVP>2</RvdsVP>
             <RvdsMve>0</RvdsMve>
             <RvdsCdeCp>0</RvdsCdeCp>
-            <nBranchProt>0</nBranchProt>
             <hadIRAM2>1</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
@@ -2206,7 +2219,7 @@
             </File>
             <File>
               <FileName>overridden_controller.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\cfg\eoemsappl\overridden_controller.c</FilePath>
             </File>
             <File>
@@ -2271,12 +2284,12 @@
             </File>
             <File>
               <FileName>EOtheMotionController.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOtheMotionController.c</FilePath>
             </File>
             <File>
               <FileName>EOtheEncoderReader.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOtheEncoderReader.c</FilePath>
             </File>
             <File>
@@ -2286,7 +2299,7 @@
             </File>
             <File>
               <FileName>EOCurrentsWatchdog.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOCurrentsWatchdog.c</FilePath>
             </File>
             <File>
@@ -2665,7 +2678,7 @@
             </File>
             <File>
               <FileName>EoProtocolMC_fun_ems4rd.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\cfg\eoprot-callbacks\EoProtocolMC_fun_ems4rd.c</FilePath>
             </File>
           </Files>
@@ -2705,7 +2718,7 @@
             </File>
             <File>
               <FileName>EoCANprotMCperiodic.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\can\config-can-protocol\EoCANprotMCperiodic.c</FilePath>
             </File>
             <File>
@@ -2816,6 +2829,21 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>torquemodel</GroupName>
+          <Files>
+            <File>
+              <FileName>TorqueModel.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\torquemodel\TorqueModel.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>TorqueModel_capi.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\torquemodel\TorqueModel_capi.cpp</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>::CMSIS</GroupName>
           <GroupOption>
             <CommonProperty>
@@ -2899,7 +2927,7 @@
         <TargetCommonOption>
           <Device>STM32F407IG</Device>
           <Vendor>STMicroelectronics</Vendor>
-          <PackID>Keil.STM32F4xx_DFP.2.16.0</PackID>
+          <PackID>Keil.STM32F4xx_DFP.2.15.0</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
           <Cpu>IRAM(0x20000000-0x2001FFFF) IRAM2(0x10000000-0x1000FFFF) IROM(0x8000000-0x80FFFFF) CLOCK(25000000) CPUTYPE("Cortex-M4") FPU2</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -3069,7 +3097,6 @@
             <RvdsVP>2</RvdsVP>
             <RvdsMve>0</RvdsMve>
             <RvdsCdeCp>0</RvdsCdeCp>
-            <nBranchProt>0</nBranchProt>
             <hadIRAM2>1</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
@@ -3693,7 +3720,7 @@
             </File>
             <File>
               <FileName>overridden_controller.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\cfg\eoemsappl\overridden_controller.c</FilePath>
             </File>
             <File>
@@ -3809,12 +3836,12 @@
             </File>
             <File>
               <FileName>EOtheMotionController.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOtheMotionController.c</FilePath>
             </File>
             <File>
               <FileName>EOtheEncoderReader.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOtheEncoderReader.c</FilePath>
             </File>
             <File>
@@ -3824,7 +3851,7 @@
             </File>
             <File>
               <FileName>EOCurrentsWatchdog.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOCurrentsWatchdog.c</FilePath>
             </File>
             <File>
@@ -4254,7 +4281,7 @@
             </File>
             <File>
               <FileName>EoProtocolMC_fun_ems4rd.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\cfg\eoprot-callbacks\EoProtocolMC_fun_ems4rd.c</FilePath>
             </File>
           </Files>
@@ -4294,7 +4321,7 @@
             </File>
             <File>
               <FileName>EoCANprotMCperiodic.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\can\config-can-protocol\EoCANprotMCperiodic.c</FilePath>
             </File>
             <File>
@@ -4405,6 +4432,21 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>torquemodel</GroupName>
+          <Files>
+            <File>
+              <FileName>TorqueModel.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\torquemodel\TorqueModel.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>TorqueModel_capi.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\torquemodel\TorqueModel_capi.cpp</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>::CMSIS</GroupName>
           <GroupOption>
             <CommonProperty>
@@ -4482,13 +4524,13 @@
       <TargetName>ems-stlink</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>6180000::V6.18::ARMCLANG</pCCUsed>
+      <pCCUsed>6160000::V6.16::ARMCLANG</pCCUsed>
       <uAC6>1</uAC6>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F407IG</Device>
           <Vendor>STMicroelectronics</Vendor>
-          <PackID>Keil.STM32F4xx_DFP.2.16.0</PackID>
+          <PackID>Keil.STM32F4xx_DFP.2.15.0</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
           <Cpu>IRAM(0x20000000-0x2001FFFF) IRAM2(0x10000000-0x1000FFFF) IROM(0x8000000-0x80FFFFF) CLOCK(25000000) CPUTYPE("Cortex-M4") FPU2</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -4658,7 +4700,6 @@
             <RvdsVP>2</RvdsVP>
             <RvdsMve>0</RvdsMve>
             <RvdsCdeCp>0</RvdsCdeCp>
-            <nBranchProt>0</nBranchProt>
             <hadIRAM2>1</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
@@ -4810,9 +4851,9 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>-DXenableTHESERVICETESTER -DEOTHESERVICES_disable_thePOS -Wno-pragma-pack -Wno-deprecated-register -DUSE_EMS4RD -DUSE_OLD_BUGGY_MODE_TO_SEND_UP_FULLSCALE_WITH_INVERTED_BYTES</MiscControls>
-              <Define>DIAGNOSTIC2_enabled DIAGNOSTIC2_receive_from_daemon DIAGNOSTIC2_send_to_yarprobotinterface _no_DIAGNOSTIC2_send_to_daemon</Define>
+              <Define>DIAGNOSTIC2_enabled DIAGNOSTIC2_receive_from_daemon DIAGNOSTIC2_send_to_yarprobotinterface _no_DIAGNOSTIC2_send_to_daemon ERGOJOINT</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\..\..\libs\highlevel\abslayer\ipal\api;..\..\..\..\..\libs\highlevel\abslayer\osal\api;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\core\core;..\..\..\..\..\embobj\core\exec\multitask;..\..\..\..\..\embobj\plus\embenv;..\..\..\..\..\embobj\plus\ipnet;..\..\..\..\..\libs\highlevel\services\embenv\api;..\..\..\..\..\libs\midware\eventviewer\api;..\cfg\eoemsappl;..\cfg\abslayer;..\..\..\..\..\embobj\plus\ctrloop;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\plus\comm-v2\icub;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\plus\comm-v2\protocol\api;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\plus\comm-v2\protocol\src;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\plus\comm-v2\transport;..\..\..\..\..\embobj\plus\board\ems001;..\..\..\..\..\embobj\plus\mc;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\plus\utils;.;..\cfg\eoprot-callbacks;..\src\eoappservices;..\cfg\eoappservices\icub-can-proto;..\cfg\eoappservices\icub-can-net;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\robotconfig\v1\backdoor;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\plus\comm-v2\opcprot;..\..\..\..\..\..\..\..\..\icub-firmware-shared\can\canProtocolLib;..\cfg\eoprot-boards;..\..\..\..\..\libs\highlevel\abslayer\hal2\api;..\..\..\..\ems004\env\cfg;..\cfg\eoemsappl;..\..\..\..\..\libs\highlevel\services\embodyrobot;..\..\..\..\..\libs\midware\hl-plus\api;..\..\..\..\..\embobj\plus\can;..\..\..\..\..\embobj\plus\can\config-can-mapping;..\..\..\..\..\embobj\plus\can\config-can-protocol;..\..\..\..\..\embobj\plus\board;..\..\..\..\mc4plus\appl\v2\src\eoappservices;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embot;..\..\..\..\..\embot\cif;..\..\..\..\..\..\..\..\..\icub-firmware-shared\embot\core;..\..\..\..\..\..\..\..\..\icub-firmware-shared\embot\prot\eth;..\..\..\..\..\mbd\kalman_filter</IncludePath>
+              <IncludePath>..\..\..\..\..\libs\highlevel\abslayer\ipal\api;..\..\..\..\..\libs\highlevel\abslayer\osal\api;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\core\core;..\..\..\..\..\embobj\core\exec\multitask;..\..\..\..\..\embobj\plus\embenv;..\..\..\..\..\embobj\plus\ipnet;..\..\..\..\..\libs\highlevel\services\embenv\api;..\..\..\..\..\libs\midware\eventviewer\api;..\cfg\eoemsappl;..\cfg\abslayer;..\..\..\..\..\embobj\plus\ctrloop;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\plus\comm-v2\icub;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\plus\comm-v2\protocol\api;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\plus\comm-v2\protocol\src;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\plus\comm-v2\transport;..\..\..\..\..\embobj\plus\board\ems001;..\..\..\..\..\embobj\plus\mc;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\plus\utils;.;..\cfg\eoprot-callbacks;..\src\eoappservices;..\cfg\eoappservices\icub-can-proto;..\cfg\eoappservices\icub-can-net;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\robotconfig\v1\backdoor;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embobj\plus\comm-v2\opcprot;..\..\..\..\..\..\..\..\..\icub-firmware-shared\can\canProtocolLib;..\cfg\eoprot-boards;..\..\..\..\..\libs\highlevel\abslayer\hal2\api;..\..\..\..\ems004\env\cfg;..\cfg\eoemsappl;..\..\..\..\..\libs\highlevel\services\embodyrobot;..\..\..\..\..\libs\midware\hl-plus\api;..\..\..\..\..\embobj\plus\can;..\..\..\..\..\embobj\plus\can\config-can-mapping;..\..\..\..\..\embobj\plus\can\config-can-protocol;..\..\..\..\..\embobj\plus\board;..\..\..\..\mc4plus\appl\v2\src\eoappservices;..\..\..\..\..\..\..\..\..\icub-firmware-shared\eth\embot;..\..\..\..\..\embot\cif;..\..\..\..\..\..\..\..\..\icub-firmware-shared\embot\core;..\..\..\..\..\..\..\..\..\icub-firmware-shared\embot\prot\eth;..\..\..\..\..\mbd\kalman_filter;..\src\torquemodel</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -5282,7 +5323,7 @@
             </File>
             <File>
               <FileName>overridden_controller.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\cfg\eoemsappl\overridden_controller.c</FilePath>
             </File>
             <File>
@@ -5398,12 +5439,12 @@
             </File>
             <File>
               <FileName>EOtheMotionController.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOtheMotionController.c</FilePath>
             </File>
             <File>
               <FileName>EOtheEncoderReader.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOtheEncoderReader.c</FilePath>
             </File>
             <File>
@@ -5413,7 +5454,7 @@
             </File>
             <File>
               <FileName>EOCurrentsWatchdog.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\src\eoappservices\EOCurrentsWatchdog.c</FilePath>
             </File>
             <File>
@@ -5945,7 +5986,7 @@
             </File>
             <File>
               <FileName>EoProtocolMC_fun_ems4rd.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\cfg\eoprot-callbacks\EoProtocolMC_fun_ems4rd.c</FilePath>
             </File>
           </Files>
@@ -5985,7 +6026,7 @@
             </File>
             <File>
               <FileName>EoCANprotMCperiodic.c</FileName>
-              <FileType>1</FileType>
+              <FileType>8</FileType>
               <FilePath>..\..\..\..\..\embobj\plus\can\config-can-protocol\EoCANprotMCperiodic.c</FilePath>
             </File>
             <File>
@@ -6092,6 +6133,21 @@
               <FileName>kalman_filter_data.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\..\..\..\mbd\kalman_filter\kalman_filter_data.cpp</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>torquemodel</GroupName>
+          <Files>
+            <File>
+              <FileName>TorqueModel.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\torquemodel\TorqueModel.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>TorqueModel_capi.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\..\..\..\embobj\plus\mc\torquemodel\TorqueModel_capi.cpp</FilePath>
             </File>
           </Files>
         </Group>

@@ -19,7 +19,7 @@
 #ifndef MC_CONTROLLER___
 #define MC_CONTROLLER___
 
-#ifdef WRIST_MK2
+#if defined(WRIST_MK2) || defined(ERGOJOINT)
 #include "JointSet.h"
 #endif
 
@@ -35,7 +35,7 @@ extern "C" {
 #include "Motor.h"
 #include "AbsEncoder.h"
 #include "Pid.h"
-#ifndef WRIST_MK2
+#if !defined(WRIST_MK2) && !defined(ERGOJOINT)
 #include "JointSet.h"
 #endif
 typedef struct //MController
