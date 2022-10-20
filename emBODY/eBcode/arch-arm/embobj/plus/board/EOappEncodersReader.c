@@ -81,7 +81,8 @@
 // --------------------------------------------------------------------------------------------------------------------
 // - definition (and initialisation) of extern variables. deprecated: better using _get(), _set() on static variables 
 // --------------------------------------------------------------------------------------------------------------------
-
+hal_spiencoder_position_t DEBUG_AKSIM_rawValue = 0;
+hal_spiencoder_diagnostic_t DEBUG_AKSIM_diagn = {0}; 
 
 // --------------------------------------------------------------------------------------------------------------------
 // - typedef with internal scope
@@ -661,7 +662,11 @@ extern eOresult_t eo_appEncReader_GetValue(EOappEncReader *p, uint8_t jomo, eOen
                     prop.valueinfo->errortype = encreader_err_AEA_READING;
                     errorparam = 0xffff;
                 }
-            }
+                
+                //DEBUG purpose only
+                DEBUG_AKSIM_rawValue = position;
+                DEBUG_AKSIM_diagn = diagn; 
+            } break;
             
             
             case eomc_enc_amo:
@@ -1343,20 +1348,20 @@ static eObool_t s_eo_appEncReader_IsValidValue_AEA3(uint32_t *valueraw, eOencode
 
 static eObool_t s_eo_appEncReader_IsValidValue_AKSIM2(hal_spiencoder_diagnostic_t* diag, eOencoderreader_errortype_t *error)
 {
-    switch(diag->type)
-    {
-        case hal_spiencoder_diagnostic_type_aksim2_invalid_data:
-            *error = encreader_err_AKSIM2_INVALID_DATA;
-            return eobool_false;
-        case hal_spiencoder_diagnostic_type_aksim2_crc_error:
-            *error = encreader_err_AKSIM2_CRC_ERROR;
-            return eobool_false;
-        case hal_spiencoder_diagnostic_type_aksim2_close_to_limits:
-            *error = encreader_err_AKSIM2_CLOSE_TO_LIMITS;
-            break;
-        default:
-            *error = encreader_err_NONE;
-    }
+//    switch(diag->type)
+//    {
+//        case hal_spiencoder_diagnostic_type_aksim2_invalid_data:
+//            *error = encreader_err_AKSIM2_INVALID_DATA;
+//            return eobool_false;
+//        case hal_spiencoder_diagnostic_type_aksim2_crc_error:
+//            *error = encreader_err_AKSIM2_CRC_ERROR;
+//            return eobool_false;
+//        case hal_spiencoder_diagnostic_type_aksim2_close_to_limits:
+//            *error = encreader_err_AKSIM2_CLOSE_TO_LIMITS;
+//            break;
+//        default:
+//            *error = encreader_err_NONE;
+//    }
     
     return eobool_true;
 }

@@ -1119,6 +1119,18 @@ BOOL Joint_set_pwm_ref(Joint* o, CTRL_UNITS pwm_ref)
         return FALSE;
     }
     
+    if (pwm_ref >= 5498.0f && pwm_ref <= 5502.0f)
+    {        
+        eOerrmanDescriptor_t errdes = {0};
+
+        errdes.code             = eoerror_code_get(eoerror_category_Debug, eoerror_value_DEB_tag01);
+        errdes.sourcedevice     = eo_errman_sourcedevice_localboard;
+        errdes.sourceaddress    = o->ID;
+        errdes.par16            = (int)pwm_ref;
+        errdes.par64            = 0;
+        eo_errman_Error(eo_errman_GetHandle(), eo_errortype_debug, "**5500**", NULL, &errdes);
+    }
+    
     o->out_ref = pwm_ref;
 
     return TRUE;

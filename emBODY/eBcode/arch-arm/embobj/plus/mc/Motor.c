@@ -1002,6 +1002,10 @@ void Motor_update_state_fbk(Motor* o, void* state) //
 }
 
 #if !defined(EOTHESERVICES_customize_handV3_7joints)
+#include "hal_spiencoder.h"
+extern hal_spiencoder_position_t DEBUG_AKSIM_rawValue;
+extern hal_spiencoder_diagnostic_t DEBUG_AKSIM_diagn; 
+
 void Motor_actuate(Motor* motor, uint8_t N) //
 {
     if (motor->HARDWARE_TYPE == HARDWARE_2FOC)
@@ -1019,7 +1023,27 @@ void Motor_actuate(Motor* motor, uint8_t N) //
         command.clas = eocanprot_msgclass_periodicMotorControl;    
         command.type  = ICUBCANPROTO_PER_MC_MSG__EMSTO2FOC_DESIRED_CURRENT;
         command.value = output;
-    
+        
+        /////////////////// DEBUG ASKIM2 ////////////////////////////////////
+        //if we consider the output array as an arry of bytes (uint8_t*) we have:
+        //    - output[0] and output[1] ==> motor target calulated by the motor controller
+        //    - output[2] ==> the conrtol bits of askim. This byte contains all possibile error becouse the bit are set by | (or)
+        //    - output[3] ==> the last error verified by HAL. its value is 1<< hal_spiencoder_diagnostic_type_t
+        //    - output[4], output[5], output[6],output[7] ==> contains the raw position on unit32_t
+        
+        uint8_t *output_u8_ptr = (uint8_t *)output;
+        //1. set the controlbits of askim2
+        output_u8_ptr[2] = DEBUG_AKSIM_diagn.info.aksim2_status_crc;
+        
+        //2. set the last error verified by HAL
+        output_u8_ptr[3] = 0;
+        output_u8_ptr[3] = 1<< DEBUG_AKSIM_diagn.type;
+        
+        uint32_t *output_u32_ptr = (uint32_t *)output;
+        output_u32_ptr[1] = DEBUG_AKSIM_rawValue;
+        /////////////////////////////////////////////////////////////////////
+        
+        
         eObrd_canlocation_t location = {0};
         location.port = eOcanport1;
         location.addr = 0;
