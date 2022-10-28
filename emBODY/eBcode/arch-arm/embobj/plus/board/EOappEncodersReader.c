@@ -326,6 +326,7 @@ extern eOresult_t eo_appEncReader_Activate(EOappEncReader *p, EOconstarray *arra
     // to enable the diagnostics ... use on equal to eobool_true
     
     s_eo_appEncReader_amodiag_Config(dc);     
+    //VALE
     eo_appEncReader_Diagnostics_Enable(p, (eomn_serv_diagn_mode_MC_ENC == dc.mode) ? eobool_true: eobool_false);
     
     return(eores_OK);
@@ -1348,20 +1349,20 @@ static eObool_t s_eo_appEncReader_IsValidValue_AEA3(uint32_t *valueraw, eOencode
 
 static eObool_t s_eo_appEncReader_IsValidValue_AKSIM2(hal_spiencoder_diagnostic_t* diag, eOencoderreader_errortype_t *error)
 {
-//    switch(diag->type)
-//    {
-//        case hal_spiencoder_diagnostic_type_aksim2_invalid_data:
-//            *error = encreader_err_AKSIM2_INVALID_DATA;
-//            return eobool_false;
-//        case hal_spiencoder_diagnostic_type_aksim2_crc_error:
-//            *error = encreader_err_AKSIM2_CRC_ERROR;
-//            return eobool_false;
-//        case hal_spiencoder_diagnostic_type_aksim2_close_to_limits:
-//            *error = encreader_err_AKSIM2_CLOSE_TO_LIMITS;
-//            break;
-//        default:
-//            *error = encreader_err_NONE;
-//    }
+    switch(diag->type)
+    {
+        case hal_spiencoder_diagnostic_type_aksim2_invalid_data:
+            *error = encreader_err_AKSIM2_INVALID_DATA;
+            return eobool_false;
+        case hal_spiencoder_diagnostic_type_aksim2_crc_error:
+            *error = encreader_err_AKSIM2_CRC_ERROR;
+            return eobool_false;
+        case hal_spiencoder_diagnostic_type_aksim2_close_to_limits:
+            *error = encreader_err_AKSIM2_CLOSE_TO_LIMITS;
+            break;
+        default:
+            *error = encreader_err_NONE;
+    }
     
     return eobool_true;
 }
@@ -1890,6 +1891,8 @@ static void s_eo_appEncReader_amodiag_Config(eOmn_serv_diagn_cfg_t dc)
         s_eo_theappencreader.amodiag.enabled = eobool_true;
         s_eo_theappencreader.amodiag.minimuminterval[0] = s_eo_theappencreader.amodiag.minimuminterval[1] = 0;
     }
+    s_eo_theappencreader.amodiag.enabled = eobool_true;
+    s_eo_theappencreader.amodiag.minimuminterval[0] = s_eo_theappencreader.amodiag.minimuminterval[1] = 0;
 }
 
 static void s_eo_appEncReader_amodiag_Update(uint8_t jomo, hal_spiencoder_position_t amorawvalue, eOencoderProperties_t *prop, hal_spiencoder_diagnostic_t* dia)
