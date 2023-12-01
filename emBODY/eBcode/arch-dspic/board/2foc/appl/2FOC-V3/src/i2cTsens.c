@@ -6,6 +6,8 @@
 
 #include "i2cTsens.h"
 
+#include <stdint.h>
+
 #if 0
 
 void I2CInit(void)
