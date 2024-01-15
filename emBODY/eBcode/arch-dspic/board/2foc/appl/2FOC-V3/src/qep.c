@@ -158,8 +158,8 @@ inline int QEgetPos()
             {
                 QE_RISE_WARNING(index_broken);
                 
-                while (poscnt < 0)              poscnt += QE_RESOLUTION;
-                while (poscnt >= QE_RESOLUTION) poscnt -= QE_RESOLUTION;
+                if (poscnt < 0)              poscnt += QE_RESOLUTION;
+                if (poscnt >= QE_RESOLUTION) poscnt -= QE_RESOLUTION;
                 
                 POSCNT = (unsigned int)poscnt;
             }
@@ -167,7 +167,7 @@ inline int QEgetPos()
             poscnt_old = poscnt;
         }
     }
-
+    
     return __builtin_divsd(((long)poscnt)<<16,QE_RESOLUTION);
 }
 
