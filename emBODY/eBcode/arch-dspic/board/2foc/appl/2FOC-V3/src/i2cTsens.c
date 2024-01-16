@@ -188,7 +188,7 @@ void I2CSequentialReadReg(char addr, char byteHigh, char byteLow, char* buff, in
 
 
 int I2Cwdog = 0;
-int I2Ccomerrwdog = 0;
+volatile int I2Ccomerrwdog = 0; //counts number of continuos communication error
 volatile int I2Cerrcode = 0;
 volatile char I2Cdead = 0;
 volatile uint16_t I2Cerrors = 0;
@@ -258,6 +258,28 @@ int setupI2CTsens(void)
     return config_sensor();
 }
 
+
+#define TEST_ON_ROBOT
+
+
+#ifdef TEST_ON_ROBOT
+//-50 deg
+#define ERR_VAL_0X19 -1704
+//-100 deg
+#define ERR_VAL_0X10 -3453
+//-150 deg
+#define ERR_NUM_10 -5261
+
+#else
+//-50 deg
+#define ERR_VAL_0X19 -4721
+// -100 deg
+#define ERR_VAL_0X10 -8700
+// -150 deg
+#define ERR_NUM_10 -12000
+#endif
+    
+
 int readI2CTsens(volatile int* temperature)
 {   
     I2Cerrcode = 0;
@@ -293,29 +315,37 @@ int readI2CTsens(volatile int* temperature)
             WHILE(I2C1CONbits.ACKEN, -14, I2Ctimeout)
         }
         
-        if(buffer[2] != 0x19)// data invalid --> discard it
+        if(buffer[2] == 0x19) //data valid
         {
-            *temperature = -3000;
-            I2Cerrcode = -19;
+            int cur_tmp = buffer[0]<<8 | buffer[1];
             
+            if(cur_tmp == 0x7fff)
+            {
+                I2Cerrcode = -18;
+                I2Ccomerrwdog++;
+            }
+            else
+            {
+                //if i'm here I have a correct value
+                *temperature = cur_tmp;
+                I2Ccomerrwdog = 0; // clean the communication error watchdog
+            }
+        }         
+        else
+        {
+            I2Ccomerrwdog++;
+            //data not valid
             if(buffer[2] == 0x10) // sensor re-initialized itself --> configure again
             {
                 I2Cerrcode = -20;
-                *temperature = -4000;
-                config_sensor();
+                *temperature = ERR_VAL_0X10;
+                goto I2Ctimeout; //--> go to reinit the I2C
             }
-        }
-        else
-        {
-            *temperature = buffer[0]<<8 | buffer[1];
-        
-            if(*temperature == 0x7fff)
+            else
             {
-                *temperature = -5000;
-                I2Cerrcode = -18;
+                *temperature = ERR_VAL_0X19;
+                I2Cerrcode = -19;
             }
-            
-            I2Ccomerrwdog = 0; // clean the communication error watchdog
         }
     }
     else
@@ -324,9 +354,14 @@ int readI2CTsens(volatile int* temperature)
         I2Cerrcode = -17;
     }
     
-    if(I2Ccomerrwdog > 50) // cannot communicate
+    if(I2Ccomerrwdog > 10) // cannot communicate
     {
         I2Cerrcode = -21;
+        
+        if(( *temperature != ERR_VAL_0X10) && (*temperature != ERR_VAL_0X19))
+        {
+            *temperature = ERR_NUM_10; 
+        }
     }
     
     // stop

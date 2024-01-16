@@ -158,12 +158,8 @@ void __attribute__((__interrupt__, no_auto_psv)) _T1Interrupt(void)
             cycle = 0;
 
             int err = readI2CTsens(&gTemperature);
-            
-            if(err == -21)
-            {
-                overheating = TRUE;
-            }
-            else if (!err)
+        
+            if (!err)
             {        
                 if (gTemperature > gTemperatureLimit)
                 {
@@ -173,11 +169,12 @@ void __attribute__((__interrupt__, no_auto_psv)) _T1Interrupt(void)
                 {
                     overheating = FALSE;
                 }
-            }
-            if (overheating && !SysError.OverHeatingFailure)
-            {
-                SysError.OverHeatingFailure = TRUE;
-                FaultConditionsHandler();
+                
+                if (overheating && !SysError.OverHeatingFailure)
+                {
+                    SysError.OverHeatingFailure = TRUE;
+                    FaultConditionsHandler();
+                }
             }
         }
     }
@@ -591,7 +588,7 @@ void Timer2Config()
   WriteTimer2(0);
   // TODO: blindly stolen from timer1. Change if needed. NO, YOU CHANGE IT!
   // TODO: non ho capito! (LC)
-  // 4,82 msec (207.4Hz) TODO: perch� copi e non cambi i commenti?
+  // 4,82 msec (207.4Hz) TODO: perch? copi e non cambi i commenti?
   // one timertick is 1.6 us
   // TODO: un commento che si capisca pare di troppo.
   timertick = ((SPEEDLOOPTIME * 1000.0*1000.0) / 1.6);
