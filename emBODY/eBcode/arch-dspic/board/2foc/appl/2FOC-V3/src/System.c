@@ -158,8 +158,12 @@ void __attribute__((__interrupt__, no_auto_psv)) _T1Interrupt(void)
             cycle = 0;
 
             int err = readI2CTsens(&gTemperature);
-        
-            if (!err)
+            
+            if(err == -21)
+            {
+                overheating = TRUE;
+            }
+            else if (!err)
             {        
                 if (gTemperature > gTemperatureLimit)
                 {
@@ -169,12 +173,11 @@ void __attribute__((__interrupt__, no_auto_psv)) _T1Interrupt(void)
                 {
                     overheating = FALSE;
                 }
-                
-                if (overheating && !SysError.OverHeatingFailure)
-                {
-                    SysError.OverHeatingFailure = TRUE;
-                    FaultConditionsHandler();
-                }
+            }
+            if (overheating && !SysError.OverHeatingFailure)
+            {
+                SysError.OverHeatingFailure = TRUE;
+                FaultConditionsHandler();
             }
         }
     }

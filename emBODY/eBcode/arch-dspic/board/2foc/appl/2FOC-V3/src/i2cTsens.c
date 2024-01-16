@@ -188,6 +188,7 @@ void I2CSequentialReadReg(char addr, char byteHigh, char byteLow, char* buff, in
 
 
 int I2Cwdog = 0;
+int I2Ccomerrwdog = 0;
 volatile int I2Cerrcode = 0;
 volatile char I2Cdead = 0;
 volatile uint16_t I2Cerrors = 0;
@@ -291,17 +292,41 @@ int readI2CTsens(volatile int* temperature)
             I2C1CONbits.ACKEN = 1;      // Initiate Acknowledge and transmit ACKDT
             WHILE(I2C1CONbits.ACKEN, -14, I2Ctimeout)
         }
-
-        *temperature = buffer[0]<<8 | buffer[1];
-        if(*temperature == 0x7fff)
+        
+        if(buffer[2] != 0x19)// data invalid --> discard it
         {
-            *temperature = -5000;
-            I2Cerrcode = -18;
+            *temperature = -3000;
+            I2Cerrcode = -19;
+            
+            if(buffer[2] == 0x10) // sensor re-initialized itself --> configure again
+            {
+                I2Cerrcode = -20;
+                *temperature = -4000;
+                config_sensor();
+            }
+        }
+        else
+        {
+            *temperature = buffer[0]<<8 | buffer[1];
+        
+            if(*temperature == 0x7fff)
+            {
+                *temperature = -5000;
+                I2Cerrcode = -18;
+            }
+            
+            I2Ccomerrwdog = 0; // clean the communication error watchdog
         }
     }
     else
     {
+        ++I2Ccomerrwdog;
         I2Cerrcode = -17;
+    }
+    
+    if(I2Ccomerrwdog > 50) // cannot communicate
+    {
+        I2Cerrcode = -21;
     }
     
     // stop
