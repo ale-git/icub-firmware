@@ -186,7 +186,7 @@ void I2CSequentialReadReg(char addr, char byteHigh, char byteLow, char* buff, in
 
 
 
-
+volatile int synthTempCounter = 0;//timer for generation of synthetic data
 int I2Cwdog = 0;
 volatile int I2Ccomerrwdog = 0; //counts number of continuos communication error
 volatile int I2Cerrcode = 0;
@@ -194,7 +194,8 @@ volatile char I2Cdead = 0;
 volatile uint16_t I2Cerrors = 0;
 volatile BOOL overheating = FALSE;
 
-#define WHILE(flag, errcode, jump) for (I2Cwdog=25600; I2Cwdog && (flag); --I2Cwdog); if (!I2Cwdog) { I2Cerrcode=errcode; goto jump; }
+//25600
+#define WHILE(flag, errcode, jump) for (I2Cwdog=6400; I2Cwdog && (flag); --I2Cwdog); if (!I2Cwdog) { I2Cerrcode=errcode; goto jump; }
 
 //////////////////////////////////
 
@@ -244,7 +245,7 @@ int setupI2CTsens(void)
     ODCBbits.ODCB8=1;
     ODCBbits.ODCB9=1;
 
-    I2C1BRG = 393;          // @100kHz; (FCY/FSCL - FCY/1e7) - 1
+    I2C1BRG = 196;//393;          // @100kHz; (FCY/FSCL - FCY/1e7) - 1
     I2C1CONbits.I2CEN = 0;  // Disable I2C
     I2C1CONbits.DISSLW = 1; // Disable slew rate control
     I2C1CONbits.A10M = 0;   // 7-bit slave addr
@@ -259,31 +260,39 @@ int setupI2CTsens(void)
 }
 
 
-#define TEST_ON_ROBOT
+//#define TEST_ON_ROBOT
 
 
 #ifdef TEST_ON_ROBOT
+//-30 deg
+#define ERR_VAL_0X19 -378
 //-50 deg
-#define ERR_VAL_0X19 -1704
-//-100 deg
-#define ERR_VAL_0X10 -3453
-//-150 deg
-#define ERR_NUM_10 -5261
+#define ERR_VAL_0X10 -631
+//-70 deg
+#define ERR_NUM_10 -886
+// -90 deg
+#define DEF_VAL_TEMP -1141
+// 10 deg for increments of synth data
+#define INCR_DEG_10 127
 
 #else
-//-50 deg
-#define ERR_VAL_0X19 -4721
-// -100 deg
-#define ERR_VAL_0X10 -8700
-// -150 deg
-#define ERR_NUM_10 -12000
+//-30 deg
+#define ERR_VAL_0X19 -2729
+// -50 deg
+#define ERR_VAL_0X10 -4613
+// -70 deg
+#define ERR_NUM_10 -6549
+// -90 deg
+#define DEF_VAL_TEMP -8541
+// 10 deg for increments of synth data
+#define INCR_DEG_10 897
 #endif
     
 
 int readI2CTsens(volatile int* temperature)
 {   
     I2Cerrcode = 0;
-    *temperature = -5000;
+    *temperature = DEF_VAL_TEMP;
     
     // start
     I2C1CONbits.ACKDT = 0; // Reset any ACK
@@ -339,13 +348,13 @@ int readI2CTsens(volatile int* temperature)
             {
                 I2Cerrcode = -20;
                 *temperature = ERR_VAL_0X10;
-                goto I2Ctimeout; //--> go to reinit the I2C
             }
             else
             {
                 *temperature = ERR_VAL_0X19;
                 I2Cerrcode = -19;
             }
+            goto I2Ctimeout; //--> go to reinit the I2C
         }
     }
     else
@@ -354,7 +363,7 @@ int readI2CTsens(volatile int* temperature)
         I2Cerrcode = -17;
     }
     
-    if(I2Ccomerrwdog > 10) // cannot communicate
+    if(I2Ccomerrwdog > 100) // cannot communicate
     {
         I2Cerrcode = -21;
         
@@ -410,4 +419,19 @@ fatal_error:
     config_sensor();
 
     return I2Cerrcode;
+}
+
+void generateI2CTsensSynthetic(volatile int* temperature)
+{
+    
+    // increase temp of 10 raw unit 
+    if(synthTempCounter >= 2)
+    {
+        *temperature += 897;
+        synthTempCounter = 0;
+    }
+    else
+    {
+        ++synthTempCounter;
+    }
 }

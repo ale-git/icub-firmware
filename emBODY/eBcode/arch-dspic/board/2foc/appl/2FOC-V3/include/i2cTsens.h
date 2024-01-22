@@ -18,6 +18,7 @@ extern "C" {
     
 int setupI2CTsens(void);
 int readI2CTsens(volatile int* temperature);
+void generateI2CTsensSynthetic(volatile int* temperature);
 
 #ifdef	__cplusplus
 }

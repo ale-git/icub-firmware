@@ -153,29 +153,53 @@ void __attribute__((__interrupt__, no_auto_psv)) _T1Interrupt(void)
         
         static int cycle = 0;
         
-        if (++cycle>=208)
+        if (++cycle>=21)
         {
             cycle = 0;
-
+            
             int err = readI2CTsens(&gTemperature);
-        
-            if (!err)
+            
+            if(err == -21)
+            {
+                overheating = TRUE;
+            }
+            else if (!err)
             {        
                 if (gTemperature > gTemperatureLimit)
                 {
-                    overheating = TRUE;
+                    ++gTemperatureOverheatingCounter;
                 }
-                else if (gTemperature < (gTemperatureLimit-gTemperatureLimit/8))
+                else if (gTemperature < gTemperatureLimit)
                 {
+                    gTemperatureOverheatingCounter = 0;
                     overheating = FALSE;
                 }
-                
-                if (overheating && !SysError.OverHeatingFailure)
-                {
-                    SysError.OverHeatingFailure = TRUE;
-                    FaultConditionsHandler();
-                }
             }
+            if (((gTemperatureOverheatingCounter > 100)  || overheating) && !SysError.OverHeatingFailure)
+            {
+                SysError.OverHeatingFailure = TRUE;
+                FaultConditionsHandler();
+            }
+            isTemperatureRead = TRUE;
+            
+            // Synthetic data generation
+            /*
+            generateI2CTsensSynthetic(&gTemperature);    
+            if (gTemperature > gTemperatureLimit)
+            {
+                overheating = TRUE;
+            }
+            else if (gTemperature < (gTemperatureLimit-gTemperatureLimit/8))
+            {
+                overheating = FALSE;
+            }
+
+            if (overheating && !SysError.OverHeatingFailure)
+            {
+                SysError.OverHeatingFailure = TRUE;
+                FaultConditionsHandler();
+            }
+            */
         }
     }
     

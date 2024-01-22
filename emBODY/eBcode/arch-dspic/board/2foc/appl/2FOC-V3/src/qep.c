@@ -143,6 +143,7 @@ inline int QEgetPos()
     
     if (QE_USE_INDEX)
     {
+        
         if (qe_index_found)
         {
             static int poscnt_old = 0;
@@ -166,6 +167,7 @@ inline int QEgetPos()
             
             poscnt_old = poscnt;
         }
+        
     }
     
     return __builtin_divsd(((long)poscnt)<<16,QE_RESOLUTION);
