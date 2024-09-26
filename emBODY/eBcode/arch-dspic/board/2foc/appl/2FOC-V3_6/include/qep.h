@@ -6,7 +6,7 @@
 
 typedef struct
 {
-    int ticks;
+    int resolution;
     int offset;
     int elettr_deg_per_rev;
     int tolerance;
@@ -32,6 +32,8 @@ typedef union
 volatile extern tQEError gEncoderError;
 
 #define QE_RISE_ERROR(e) gEncoderError.e=TRUE; SysError.EncoderFault=TRUE; FaultConditionsHandler()
+#define QE_RISE_WARNING(e) gEncoderError.e=TRUE
+
 #define QE_ELETTR_DEG_PER_REV() (gEncoderConfig.elettr_deg_per_rev)
 
 extern volatile BOOL QE_READY;
@@ -41,7 +43,7 @@ extern volatile BOOL QE_READY;
 //#define QEgetRaw() (POSCNT<<5)
 //#define QEgetElettrDeg() ((int)(__builtin_muluu(POSCNT,360)>>11))
 
-extern void QEinit(int16_t ticks, int8_t motor_num_poles, BOOL use_index);
+extern void QEinit(int16_t resolution, int8_t motor_num_poles, BOOL use_index);
 extern void QEcountErrorClear();
 extern  int QEgetElettrDeg();
 extern  int QEgetPosition();

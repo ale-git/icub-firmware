@@ -9,23 +9,12 @@
 volatile EncoderConfig_t gEncoderConfig={0,90,0};
 volatile tQEError gEncoderError;
 
+volatile int32_t QE_RESOLUTION = 0;
+volatile int16_t QE_ERR_THR = 0;
 volatile BOOL QE_READY = FALSE;
 
-volatile int16_t QE_TICKS = 0;
-volatile int32_t QE_RESOLUTION = 0;
-volatile int16_t QE_NUM_POLES = 0;
-volatile int16_t QE_RES_POLE = 0;
-volatile int16_t QE_RES_POLE_HALF = 0;
-volatile int16_t POSCNT_OLD = 0;
 
-volatile int32_t QE_COUNTER = 0;
-
-volatile int16_t QE_ERR_THR = 0;
-//volatile int32_t position_check = 0;
-
-volatile int16_t residual_enc = 0;
-
-void QEinit(int16_t ticks, int8_t num_poles, BOOL use_index)
+void QEinit(int16_t resolution, int8_t motor_num_poles, BOOL use_index)
 {
     // init the quadrature encoder peripheral
     // Configure QEI pins as digital inputs
@@ -37,36 +26,27 @@ void QEinit(int16_t ticks, int8_t num_poles, BOOL use_index)
     QEICONbits.CNTERR = 0;
     // Continue operation during sleep
     QEICONbits.QEISIDL = 0;
+    
     // QEA and QEB eventually swapped
-
-    QE_READY = FALSE;
-    
-    QE_NUM_POLES = num_poles;
-    
-    if (ticks < 0)
+    if (resolution < 0)
     {
         QEICONbits.SWPAB = 1;
-        QE_TICKS = -ticks;
+        QE_RESOLUTION = -resolution;
     }
     else
     {
         QEICONbits.SWPAB = 0;
-        QE_TICKS =  ticks;
+        QE_RESOLUTION = resolution;
     }
-    
-    QE_RESOLUTION = 4*QE_TICKS;
-    QE_RES_POLE = QE_RESOLUTION/QE_NUM_POLES;
-    QE_RES_POLE_HALF = QE_RES_POLE/2;
-    
-    QE_ERR_THR = (QE_TICKS * (long)gEncoderConfig.tolerance) / 3600;
-    
-    gEncoderConfig.elettr_deg_per_rev = 360*QE_NUM_POLES;
 
-    //QEICONbits.SWPAB = 0; // iCub3 motor
-    //QEICONbits.SWPAB = 1; // old motor and CER motor
+    QE_ERR_THR = ((long)QE_RESOLUTION * (long)gEncoderConfig.tolerance) / 3600;
+    gEncoderConfig.elettr_deg_per_rev = 360*motor_num_poles;
+
     // do not output direction on IO pin
     QEICONbits.PCDOUT = 0;
-    
+
+    // Count error interrupts disabled
+    DFLTCONbits.CEID = 1;
     // Digital filters output enabled for QEn and IDX pins
     DFLTCONbits.QEOUT = 1;
     // 1:4 clock divide for digital filter for QEn
@@ -74,8 +54,7 @@ void QEinit(int16_t ticks, int8_t num_poles, BOOL use_index)
     // Filter accept edge if it persist over 3 CK
     // cycles. So max QEP pin freq is about 3.3Mhz
     DFLTCONbits.QECK = 2;
-    DFLTCONbits.IMV  = 2; // iCub
-    //DFLTCONbits.IMV  = 2; // ergoCub ?
+    DFLTCONbits.IMV  = 3;
 
     // Initialize the QEP module counter to run in modulus.
     //
@@ -86,42 +65,31 @@ void QEinit(int16_t ticks, int8_t num_poles, BOOL use_index)
     // 2   0       1       2       0       1       2       0       1       2       0
     //                       |                       |                       |
     //                     round                   round                   round
-    
-    QE_COUNTER = 0;
-    
-    // Reset position counter
-    POSCNT = 0;
-    MAXCNT = QE_RES_POLE-1;
-    POSCNT_OLD = 0;
 
-    // Index pulse doesn't reset position counter
-    QEICONbits.POSRES = 0;
+    // Reset position counter.
+    POSCNT = 0;
+
+    // Clear interrupt flag
+    IFS3bits.QEI1IF = 0;
+    
+    // Index pulse resets position counter
+    QEICONbits.POSRES = 1;
+    MAXCNT = QE_RESOLUTION - 1;
     
     if (use_index)
     {
-        // Count error interrupts enabled
-        DFLTCONbits.CEID = 0;
-        
-        // Counter reset by index 
+        //X4 mode with position counter reset by Index Pulse
         QEICONbits.QEIM = 6;
-        
-        // Enable interrupts
+        // Enable interrupt on index
         IEC3bits.QEI1IE = 1;
     }
     else
     {
-        // Count error interrupts disabled
-        DFLTCONbits.CEID = 1;
-             
-        // Disable interrupts
-        IEC3bits.QEI1IE = 0;
-        
-        // Counter reset by match with MAXCNT
+        // X4 mode with position counter reset by match with MAXCNT
         QEICONbits.QEIM = 7;
+        // Disable interrupt on MAXCNT
+        IEC3bits.QEI1IE = 0;
     }
-    
-    // reset interrupt flag
-    IFS3bits.QEI1IF = 0;
 }
 
 inline void QEcountErrorClear() __attribute__((always_inline));
@@ -133,38 +101,58 @@ inline void QEcountErrorClear()
 inline int QEgetElettrDeg() __attribute__((always_inline));
 inline int QEgetElettrDeg()
 {
-    uint16_t degrees = 0;
+    if (!QE_RESOLUTION) return 0;
     
-    if (QE_RES_POLE) degrees = __builtin_divud(__builtin_muluu(POSCNT,360),(unsigned)QE_RES_POLE);
-        
-    return (7200 + gEncoderConfig.offset + (int)degrees) % 360;
+    return (7200 + gEncoderConfig.offset + __builtin_divsd(__builtin_mulss((int)POSCNT, gEncoderConfig.elettr_deg_per_rev),QE_RESOLUTION)) % 360;
 }
+
 
 //extern volatile int position_fbk;
 
 inline int QEgetPosition() __attribute__((always_inline));
 inline int QEgetPosition()
 {    
-    int16_t delta = (int16_t)POSCNT - POSCNT_OLD;
+    if (!QE_RESOLUTION) return 0;
+        
+    int poscnt = (int)POSCNT;
+    static int poscnt_old = 0;
     
-    POSCNT_OLD = POSCNT;
+    if (!QE_READY) poscnt_old = poscnt;
     
-    while (delta < -QE_RES_POLE_HALF) delta += QE_RES_POLE;
-    while (delta > +QE_RES_POLE_HALF) delta -= QE_RES_POLE;
+    int delta = poscnt - poscnt_old;
     
-    QE_COUNTER += delta;
+    BOOL index_found = (abs(delta) >= QE_RESOLUTION/2);
     
-    while (QE_COUNTER >= QE_RESOLUTION) QE_COUNTER -= QE_RESOLUTION;
-    while (QE_COUNTER < 0)              QE_COUNTER += QE_RESOLUTION;
+    poscnt_old = poscnt;
     
-    return __builtin_divsd((QE_COUNTER<<14)+QE_TICKS/2,QE_TICKS);
+    if (MotorConfig.has_index)
+    {  
+        if (QE_READY)
+        {
+            static int poscnt_old = 0;
+            
+            if (index_found)
+            {
+                if (poscnt_old>QE_ERR_THR && poscnt_old<QE_RESOLUTION-QE_ERR_THR)
+                {
+                    QE_RISE_WARNING(dirty);
+                }
+            }
+            else if (poscnt<-16 || poscnt > QE_RESOLUTION+16)
+            {
+                QE_RISE_WARNING(index_broken);
+                
+                poscnt = (QE_RESOLUTION + poscnt) % QE_RESOLUTION;
+                
+                POSCNT = (unsigned int)poscnt;
+            }
+            
+            poscnt_old = poscnt;
+        }   
+    }
+    
+    return __builtin_divsd(((long)poscnt)<<16,QE_RESOLUTION);
 } 
-
-//inline int32_t QEgetPosCheck() __attribute__((always_inline));
-//inline int32_t QEgetPosCheck()
-//{
-//    return position_check;
-//}
 
 // this is the same of the index simulated by the hall sensors 
 // so that it must be triggered every num_poles transitions 
@@ -184,71 +172,14 @@ void QEHESCrossed(BOOL up)
 
 // QE zero crossing interrupt manager
 void __attribute__((__interrupt__,no_auto_psv)) _QEI1Interrupt(void)
-{   
-    // disable interrupts
+{
+    // disable interrupt
     IEC3bits.QEI1IE = 0;
-    
-    extern volatile long gQEPosition;
-    
-    static int UPDN = -1;
-    static int watchdog = 0;
-    
-    if (QEICONbits.CNTERR) // ROLLOVER
-    {
-        if (QE_READY)
-        {
-            watchdog += QEICONbits.UPDN ? 1 : -1;
-        
-            if (abs(watchdog) > QE_NUM_POLES) gEncoderError.index_broken = TRUE;
-        }
-        
-        POSCNT = QEICONbits.UPDN ? 0 : MAXCNT;
-    }
-    else // INDEX
-    {        
-        if (QE_READY)
-        {  
-            if (QEICONbits.UPDN == UPDN)
-            {
-                residual_enc = QEICONbits.UPDN ? MAXCNT-POSCNT : POSCNT;
-                
-                if (!QEICONbits.UPDN && residual_enc > (MAXCNT-QE_ERR_THR))  residual_enc -= MAXCNT;  
-                
-                if (watchdog == 0)
-                {
-                    gEncoderError.phase_broken = TRUE;
-                }
-                else
-                {
-                    if (residual_enc > QE_ERR_THR) gEncoderError.dirty = TRUE;
-                }
-            }
-             
-            UPDN = QEICONbits.UPDN;
-        }
-        else
-        {
-            UPDN = -1;
-                        
-            gQEPosition = 0;
-            
-            QE_READY = TRUE;
-        }
-        
-        watchdog = 0;
-        
-        POSCNT = QEICONbits.UPDN ? 0 : MAXCNT;
-    
-        POSCNT_OLD = POSCNT;
-        
-        QE_COUNTER = QEICONbits.UPDN ? 0 : QE_RESOLUTION-1;
-    }
 
-    QEICONbits.CNTERR = FALSE;
+    QE_READY = TRUE;
     
     // clear interrupt flag
     IFS3bits.QEI1IF = 0;
-    
-    // enable interrupts
+    // enable interrupt
     IEC3bits.QEI1IE = 1;
 }

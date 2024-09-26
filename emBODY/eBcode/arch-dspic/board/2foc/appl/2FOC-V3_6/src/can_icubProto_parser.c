@@ -189,9 +189,25 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
 
             setMaxCurrent(nom, peak, ovr);
 
-        return 1;
+            return 1;
         }
     
+        return 0;
+    }
+
+    if (cmd == ICUBCANPROTO_POL_MC_CMD__SET_TEMPERATURE_LIMIT)
+    {
+       if (!gCanProtocolCompatible) return 0;
+        
+        if (rxlen==3)
+        {
+            int peak  = ((int)rxpayload->b[1])|(((int)rxpayload->b[2])<<8);
+
+            setMaxTemperature(peak);
+            
+            return 1;
+        }
+        
         return 0;
     }
     
@@ -205,7 +221,7 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
         MotorConfig.swapBC = FALSE; // until not managed by protocol 
         MotorConfig.configured = TRUE;
           
-        gEncoderConfig.ticks      = rxpayload->w[1];
+        gEncoderConfig.resolution = rxpayload->w[1];
         gEncoderConfig.offset     = rxpayload->w[2];
         gEncoderConfig.numPoles   = rxpayload->b[6]/2;
         gEncoderConfig.tolerance  = (rxlen == 8) ? rxpayload->b[7] : 36; // tolerance resolution 0.1 deg, 36 = 1%
@@ -251,7 +267,7 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
         /////////////////////////////////////////////////////////////
         if (MotorConfig.has_qe || MotorConfig.has_speed_qe)
         {
-            QEinit(gEncoderConfig.ticks, gEncoderConfig.numPoles, MotorConfig.has_index);
+            QEinit(gEncoderConfig.resolution, gEncoderConfig.numPoles, MotorConfig.has_index);
         }
         else
         {
@@ -297,7 +313,7 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
     if (cmd == ICUBCANPROTO_POL_MC_CMD__SET_CURRENT_PID)
     {
         if (!gCanProtocolCompatible) return 0;
-        
+
         if (rxlen==8)
         {
             int  kp=((int)rxpayload->b[1])|(((int)rxpayload->b[2])<<8);
@@ -305,14 +321,14 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
             char ks=rxpayload->b[7];
 
             setIPid(kp,ki,ks);
-            
+
             return 1;
         }
         else if (rxlen==6)
         {
             static float fkp = 0.0f;
             static float fki = 0.0f;
-            
+
             switch (rxpayload->b[1])
             {
                 case 1: fkp = *(float*)&rxpayload->b[2]; break;
@@ -346,7 +362,7 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
     if (cmd == ICUBCANPROTO_POL_MC_CMD__SET_VELOCITY_PID)
     {
         if (!gCanProtocolCompatible) return 0;
-                
+
         if (rxlen==8)
         {
             int  kp=((int)rxpayload->b[1])|(((int)rxpayload->b[2])<<8);
@@ -452,36 +468,7 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
 
         return 1;
     }
-
-    /*
-    if (cmd == ICUBCANPROTO_POL_MC_CMD__SET_PERIODIC_MSG_CONTENTS)
-    {
-        if (rxlen!=5) return 0;
-
-        // check data to transmit if in the acceptable range
-        if ((rxpayload->b[1] < ELEMENTS_IN_PERIODIC_DATA_LIST)
-         && (rxpayload->b[2] < ELEMENTS_IN_PERIODIC_DATA_LIST)
-         && (rxpayload->b[3] < ELEMENTS_IN_PERIODIC_DATA_LIST)
-         && (rxpayload->b[4] < ELEMENTS_IN_PERIODIC_DATA_LIST))
-        {
-            // set the data to transmit
-            PeriodicMessageContents[0] = rxpayload->b[1];
-            PeriodicMessageContents[1] = rxpayload->b[2];
-            PeriodicMessageContents[2] = rxpayload->b[3];
-            PeriodicMessageContents[3] = rxpayload->b[4];
-
-            // precalculate this here. This is an optimization
-            gulpadr1 = (unsigned int*) PeriodicData[PeriodicMessageContents[0]];
-            gulpadr2 = (unsigned int*) PeriodicData[PeriodicMessageContents[1]];
-            gulpadr3 = (unsigned int*) PeriodicData[PeriodicMessageContents[2]];
-            gulpadr4 = (unsigned int*) PeriodicData[PeriodicMessageContents[3]];
-
-            return 1;
-        }
-        return 0;
-    }
-    */
-
+    
     if (cmd == ICUBCANPROTO_POL_MC_CMD__SET_I2T_PARAMS)
     {
         if (rxlen!=5) return 0;

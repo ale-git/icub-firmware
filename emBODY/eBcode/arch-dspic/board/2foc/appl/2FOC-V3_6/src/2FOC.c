@@ -153,6 +153,9 @@ volatile tMotorConfig MotorConfig;
 volatile static char bDriveEnabled = 0;
 volatile int gTemperature = 0;
 volatile int gTemperatureLimit = 0;
+volatile int gTemperatureOverheatingCounter = 0;
+volatile BOOL isTemperatureRead = FALSE;
+volatile unsigned int i2cERRORS = 0;
 
 volatile char sAlignInProgress = 0;
 
@@ -181,7 +184,7 @@ volatile int iQerror_old = 0;
 volatile int iDerror_old = 0;
 volatile char limit = 0;
 
-static const int PWM_MAX = (19*LOOPINTCY)/20; // 950
+static const int PWM_MAX = (LOOPINTCY/40)*19; // (2000/40)*19 = 950 = 95%
 
 volatile int gMaxCurrent = 0;
 volatile long sI2Tlimit = 0;
@@ -207,13 +210,17 @@ void setMaxCurrent(int nom, int peak, int ovr)
     Iovr = ovr;
 }
 
+void setMaxTemperature(int peak)
+{
+    gTemperatureLimit = peak;
+}
+
 void setIPid(int kp, int ki, char shift)
 {
     IKp = kp;
     IKi = ki/2;
     IKs = shift;
     IIntLimit = ((long)PWM_MAX)<<shift;
-    //IIntLimit = ((long)PWM_MAX/2)<<shift; // TEST
 }
 
 void setSPid(int kp, int ki, char shift)
@@ -222,7 +229,6 @@ void setSPid(int kp, int ki, char shift)
     SKi = ki/2;
     SKs = shift;
     SIntLimit = ((long)PWM_MAX)<<shift;
-    //SIntLimit = ((long)PWM_MAX/2)<<shift; // TEST
 }
 
 void ZeroControlReferences()
@@ -304,6 +310,9 @@ BOOL updateOdometry()
 
     return FALSE;
 }
+
+volatile int rotorAfbk = 0;
+volatile int rotorBfbk = 0;
 
 int alignRotorIndex(volatile int* IqRef)
 {
@@ -421,6 +430,9 @@ int alignRotorIndex(volatile int* IqRef)
             
                 while (angle >= 360) angle -= 360;
                 while (angle <    0) angle += 360;
+                
+                rotorAfbk = rotorA;
+                rotorBfbk = rotorB;
             
                 gEncoderConfig.offset = encoder_fake_0 + (deltaA + deltaB)/2 + 90 - angle;
                 
@@ -855,14 +867,14 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     Vacc += Vq<<VOLT_REF_SHIFT;
     Iacc += I2Tdata.IQMeasured;
     
-    if (++cntr == 40)
+    if (++cntr == 20)
     {
         cntr = 0;
         
         Iacc -= Imin+Imax;
         
-        IqFbk = __builtin_divsd(Iacc,38);
-        VqFbk = __builtin_divsd(Vacc,40);
+        IqFbk = __builtin_divsd(Iacc,18);
+        VqFbk = __builtin_divsd(Vacc,20);
         
         Iacc = Vacc = 0;
         Imax = 0x8000;
@@ -873,14 +885,12 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     
     ////////////////////////////////////////////////////////////////////////////
     // inv transform and PWM drive    
-    int V1 = (int)((__builtin_mulss(Vq,cosT)-__builtin_mulss(Vd,3*sinT))>>16);
-    int V2 = (int)((__builtin_mulss(Vq,sinT)+__builtin_mulss(Vd,  cosT))>>16);
+    //int V1 = (int)((__builtin_mulss(Vq,cosT)-__builtin_mulss(Vd,3*sinT))>>15);
+    //int V2 = (int)((__builtin_mulss(Vq,sinT)+__builtin_mulss(Vd,  cosT))>>15);
+        
+    int V1 = (int)(__builtin_mulss(Vq,cosT)>>15)-3*(int)(__builtin_mulss(Vd,sinT)>>15);
+    int V2 = (int)(__builtin_mulss(Vq,sinT)>>15)+  (int)(__builtin_mulss(Vd,cosT)>>15);
     
-    //Vq /= 2; // TEST
-    //Vd /= 2; // TEST
-    
-    //int V1 = (int)(__builtin_mulss(Vq,cosT)>>15)-3*(int)(__builtin_mulss(Vd,sinT)>>15); // TEST
-    //int V2 = (int)(__builtin_mulss(Vq,sinT)>>15)+  (int)(__builtin_mulss(Vd,cosT)>>15); // TEST
     
     if (sector%2) V2=-V2;
 
@@ -940,15 +950,16 @@ void DisableAuxServiceTimer()
 
 void DriveInit()
 // Perform drive SW/HW init
-{
+{    
     // Setup PWM 0% offset, PWM max and the trigger to ADC capture (Special Event Compare Count Register)
-    pwmInit(LOOPINTCY/2, DDEADTIME, PWM_MAX/2);
+    pwmInit(LOOPINTCY/2, DDEADTIME, PWM_MAX);
     
     pwmOFF();
 
     // setup and perform ADC offset calibration in MeasCurrParm.Offseta and Offsetb
     ADCDoOffsetCalibration();
 
+#if 1  // to be moved to EnableDrive() but to be tested before  
     pwmON();
 
     int pwm3_00 = PWM_MAX / 25;
@@ -962,7 +973,11 @@ void DriveInit()
     ADCDoGainCalibration();
 
     pwmOFF();
+#endif
     
+    /////////////////////////
+
+
     // Enable DMA interrupt, arm DMA for transfer
     ADCConfigPWMandDMAMode();
 
@@ -1008,8 +1023,31 @@ inline void I2Twatcher(void)
 
 void EnableDrive()
 {
+    static BOOL uncalibrated = TRUE;
+    
     bDriveEnabled = 1;
+    
+#if 0
+    if (uncalibrated)
+    {
+        uncalibrated = FALSE;
+    
+        pwmON();
 
+        int pwm3_00 = PWM_MAX / 25;
+
+        pwmOut(pwm3_00, -2*pwm3_00, pwm3_00);
+    
+        int d;
+    
+        for (d=0; d<5000; ++d) __delay32(4000); // 500 ms
+    
+        ADCDoGainCalibration();
+
+        pwmOFF();
+    }
+#endif
+    
     Timer3Disable();
 
     pwmZero();
@@ -1018,9 +1056,7 @@ void EnableDrive()
     ADCInterruptAndDMAEnable();
 
     // enable the overcurrent interrupt
-#ifndef RELENTLESS
     OverCurrentFaultIntEnable();
-#endif
 
     // I2T will run on behalf of 2FOC loop. Stop running it in behalf of Timer 3
 

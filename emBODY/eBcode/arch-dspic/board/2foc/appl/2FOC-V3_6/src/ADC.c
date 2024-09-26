@@ -11,6 +11,12 @@
 #include "ADC.h"
 #include "Faults.h"
 
+// number of samples taken to calculate zero calibration
+#define ADC_CAL_N_SAMPLES 1024
+
+// Timeout for polling loops during zero calibration
+#define ADC_CAL_TIMEOUT   1000
+
 #define ADC_VDCLINK_ALLEGRO_MIN_THRESHOLD 120
 
 SFRAC16 ADCBuffer[4] __attribute__((space(dma),aligned(16)));

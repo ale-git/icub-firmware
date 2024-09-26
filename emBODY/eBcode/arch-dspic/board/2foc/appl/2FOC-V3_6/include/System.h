@@ -20,7 +20,7 @@ typedef struct
 } /*__attribute__ ((__packed__))*/ tLED_status;
 
 extern void oscConfig(void);
-extern void SetupPorts_I2C(void);
+extern int SetupPorts_I2C(void);
 extern void SetupPorts( void );
 extern volatile tLED_status LED_status; 
 extern volatile tMeasCurrParm MeasCurrParm;
@@ -54,13 +54,12 @@ typedef union
 //
 // Oscillator derived Parameters
 //
-#define DPLL (unsigned int)(2.0*DESIREDMIPS/PLLIN) // PLL ratio (8)
-#define FOSC           (PLLIN*DPLL) // Clock frequency [Hz] (80Meg)
-#define DFCY           (FOSC/2)  // Instruction cycle frequency (Hz) (40Meg)
-#define DTCY           (1.0/DFCY) // Instruction cycle period (sec)
 
-#define DDEADTIME       (unsigned int)(DESIREDMIPS*DEADTIMESEC)  // Dead time in dTcys 40000000*0.00000025 = 10 = 1%
-#define LOOPINTCY                     (DESIREDMIPS/PWMFREQUENCY) // PWM cycle in dTcys 40000000/40000      = 1000
+#define FOSC (2*DESIREDMIPS)
+#define DPLL (unsigned int)(FOSC/PLLIN)  // PLL ratio (8)
+
+#define DDEADTIME       (unsigned int)(DESIREDMIPS*DEADTIMESEC)  // Dead time in dTcys 40000000*0.00000025 = 10 = 0.5%
+#define LOOPINTCY                     (DESIREDMIPS/PWMFREQUENCY) // PWM cycle in dTcys 40000000/20000      = 2000
 
 // return state of external fault pin
 #define EXTERNAL_FAULT_PRESSED()  (PORTA & 0x08)

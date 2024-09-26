@@ -45,7 +45,7 @@ typedef union
         unsigned has_hall:1;
         unsigned has_tsens:1;
         unsigned has_index:1;
-        
+
         unsigned has_speed_qe:1;
         unsigned verbose:1;
         unsigned swapBC:1;
@@ -62,6 +62,9 @@ volatile extern tI2T I2Tdata;
 volatile extern unsigned char gControlMode;
 volatile extern int gTemperature;
 volatile extern int gTemperatureLimit;
+volatile extern int gTemperatureOverheatingCounter;
+volatile extern BOOL isTemperatureRead;
+volatile extern unsigned int i2cERRORS;
 volatile extern long gQEPosition;
 volatile extern int  gQEVelocity;
 
@@ -73,6 +76,7 @@ extern void I2Twatcher(void);
 extern void setIPid(int kp,int ki, char shift);
 extern void setSPid(int kp,int ki, char shift);
 extern void setMaxCurrent(int nom, int peak, int ovr);
+extern void setMaxTemperature(int peak);
 extern void RequestControlMode(char cm);
 extern BOOL updateOdometry();
 

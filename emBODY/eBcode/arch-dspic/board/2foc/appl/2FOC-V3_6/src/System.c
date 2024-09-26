@@ -15,7 +15,7 @@
 #include "System.h"
 #include "UserTypes.h"
 #include "qep.h"
-#include "faults.h"
+#include "Faults.h"
 #include "ecan.h"
 #include "crc16.h"
 #include "DHES.h"
@@ -120,39 +120,19 @@ void __attribute__((__interrupt__, no_auto_psv)) _T3Interrupt(void)
         }
     }
 
-    if (MotorConfig.has_hall && MotorConfig.has_qe)
-    {
-        if (QEready())
-        {
-            int sector = DHESSector();
-            
-            static int sector_old = 0;
-            
-            if (sector != sector_old)
-            {
-                if (sector_old == 6 && sector == 1)
-                {
-                    QEHESCrossed(1);
-                }
-                else if (sector_old == 1 && sector == 6)
-                {
-                    QEHESCrossed(0);
-                }
-                
-                sector_old = sector;
-            }
-        }
-    }
+    if (MotorConfig.has_hall) DHESRead();
 
     updateOdometry();
 
     IFS0bits.T3IF = 0; // clear flag
 }
 
-//void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void)
-//{
-//        //IFS1bits.MI2C1IF = 0;	//Clear the DMA0 Interrupt Flag;
-//}
+void __attribute__((interrupt, no_auto_psv)) _MI2C1Interrupt(void)
+{
+        //IFS1bits.MI2C1IF = 0;	//Clear the DMA0 Interrupt Flag;
+}
+
+//#define WAITFOR(flag,errcode,jump) for (wdog=12800; wdog && (flag); --wdog); if (!wdog) { gTemperature=errcode; goto jump; }
 
 void __attribute__((__interrupt__, no_auto_psv)) _T1Interrupt(void)
 //
@@ -173,32 +153,56 @@ void __attribute__((__interrupt__, no_auto_psv)) _T1Interrupt(void)
         
         static int cycle = 0;
         
-        if (++cycle>=208)
+        if (++cycle>=21)
         {
             cycle = 0;
 
             int err = readI2CTsens(&gTemperature);
-        
-            if (!err)
+            
+            if(err == -21)
+            {
+                overheating = TRUE;
+            }
+            else if (!err)
             {        
                 if (gTemperature > gTemperatureLimit)
                 {
-                    overheating = TRUE;
+                    ++gTemperatureOverheatingCounter;
                 }
-                else if (gTemperature < (gTemperatureLimit-gTemperatureLimit/8))
+                else if (gTemperature < gTemperatureLimit)
                 {
+                    gTemperatureOverheatingCounter = 0;
                     overheating = FALSE;
                 }
-                
-                if (overheating && !SysError.I2TFailure)
-                {
-                    SysError.I2TFailure = TRUE;
-                    FaultConditionsHandler();
-                }
             }
+            if (((gTemperatureOverheatingCounter > 100)  || overheating) && !SysError.OverHeatingFailure)
+            {
+                SysError.OverHeatingFailure = TRUE;
+                FaultConditionsHandler();
+            }
+            isTemperatureRead = TRUE;
+            
+            // Synthetic data generation
+            /*
+            generateI2CTsensSynthetic(&gTemperature);    
+            if (gTemperature > gTemperatureLimit)
+            {
+                overheating = TRUE;
+            }
+            else if (gTemperature < (gTemperatureLimit-gTemperatureLimit/8))
+            {
+                overheating = FALSE;
+            }
+
+            if (overheating && !SysError.OverHeatingFailure)
+            {
+                SysError.OverHeatingFailure = TRUE;
+                FaultConditionsHandler();
+            }
+            */
         }
     }
-  
+
     IFS0bits.T1IF = 0; // clear flag
 }
 
@@ -328,11 +332,6 @@ void SetupHWParameters(void)
     //
     // ADC - Current Measure
     //
-
-    // Current scaling constants: Determined by hardware design
-    //MeasCurrParm.qKa = DQKA;
-    //MeasCurrParm.qKb = DQKB;
-    //MeasCurrParm.qKc = DQKC;
 
     //
     // ADC - VDC-Link Measure
@@ -503,9 +502,9 @@ void SetupPorts_DHES(void)
     // No particular init needed, pins already inputs
 }
 
-void SetupPorts_I2C(void)
+int SetupPorts_I2C(void)
 {
-    setupI2CTsens();
+    return setupI2CTsens();
 }
 
 void SetupPorts( void )

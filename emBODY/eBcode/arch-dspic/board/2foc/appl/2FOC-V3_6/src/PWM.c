@@ -12,14 +12,14 @@
 
 extern tSysStatus SysStatus;
 
-static int PWM_50_DUTY_CYCLE = 500;
-static int PWM_MAX = 475;
-static int PWM_DEADTIME = 10;
+static int PWM_50_DUTY_CYCLE = 0;
+static int PWM_MAX = 0;
+static int PWM_DEADTIME = 0;
 
 void pwmInit(short pwm_50_duty_cycle, short pwm_deadtime, short pwm_max)
 {
     PWM_50_DUTY_CYCLE = pwm_50_duty_cycle;
-    PWM_MAX = (PWM_50_DUTY_CYCLE*19)/20; //95%
+    PWM_MAX = (PWM_50_DUTY_CYCLE/20)*19; //95%
     PWM_DEADTIME = pwm_deadtime;
     
     if (pwm_max < PWM_MAX) PWM_MAX = pwm_max;
@@ -100,9 +100,7 @@ enable_retry:
     PDC1 = PDC2 = PDC3 = PWM_50_DUTY_CYCLE; // IDLE to 50% PWM
     PTCONbits.PTEN = 1; // Enable PWM generation
 
-#ifndef RELENTLESS
     OverCurrentFaultIntEnable();
-#endif
 
     FLTACON = 7; // fault enabled
 

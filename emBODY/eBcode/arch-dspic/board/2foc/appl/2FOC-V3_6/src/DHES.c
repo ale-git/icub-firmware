@@ -128,7 +128,7 @@ unsigned char DHESRead()
         return 0;
     }
     */
-    
+
     if (dhes_state == port_read) return dhes_state;
 
     // if 0 no turn has been done

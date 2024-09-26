@@ -9,12 +9,6 @@
 
 #include "MeasCurr.h"
 
-// number of samples taken to calculate zero calibration
-#define ADC_CAL_N_SAMPLES 1024
-
-// Timeout for polling loops during zero calibration
-#define ADC_CAL_TIMEOUT   1000
-
 extern SFRAC16 ADCBuffer[4];
 
 extern volatile tMeasCurrParm MeasCurrParm;

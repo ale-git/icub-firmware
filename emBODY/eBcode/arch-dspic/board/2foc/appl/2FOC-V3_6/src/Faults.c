@@ -37,8 +37,6 @@ void FaultRecheck()
     }
 }
 
-//volatile extern unsigned char HALL;
-
 void FaultReset(void)
 // called when receiving shutdown cmd and
 // going to readytoswitchon
@@ -46,8 +44,6 @@ void FaultReset(void)
     fault = 0;
 
     LED_status.RedBlinkRate = BLINKRATE_OFF;
-    
-    //HALL = 0xFF;
 
     SysError.L = 0;
 }

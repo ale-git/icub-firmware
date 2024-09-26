@@ -19,29 +19,6 @@
 #define HALL_ERROR_MAX_CNT 1000
 
 //
-// Quadrature (incremental) Encoders parameters
-// 
-// define PPR and swap A/B strategy for known quadrature incremental encoders
-
-//#define MOTOR_NUMPOLES     4 // 1970
-//#define QE_SWAPAB          0
-//#define QE_RESOLUTION  14400 // count each phase A and B edge
-
-//#define MOTOR_NUMPOLES     7
-//#define QE_RESOLUTION   4000
-
-//#define QE_ELEC_PPR   571
-//#define QE_MECH_PPR  4000
-
-
-
-// define where are connected the DHES
-//// #define DHES_CONNECTED_TO_P2_P5
-//#define DHES_CONNECTED_TO_P1_P6
-
-
-
-//
 // ADC Scaling for current reading. 
 //
 // Scaling constants: Determined by hardware design. 
@@ -59,9 +36,6 @@
 // e.g the value for 1A reading is 32768:13.5A=x:1A
 //
 // For the ACS714-10 the sensitivity is 100mV/A
-#define     DQKA       Q15( 1.0) // Ia
-#define     DQKB       Q15(-1.0) // Ib is calculated from Ia and Ic.
-#define     DQKC       Q15( 1.0) // Ic
 
 //
 // DC-Link parameters
@@ -71,11 +45,6 @@
 #define UNDERVOLTAGE_THRESHOLD 100
 // The overvoltage detection will trigger if the VDCLink rise above this value. 
 #define OVERVOLTAGE_THRESHOLD  600
-
-// I2T parameters for FILTER implementation
-#define UDEF_I2T_LIMIT 90 // %
-
-#define PWMFREQUENCY  40000
 
 // Deadtime in seconds (range 1.6 us to 25 ns)
 // DHES accept a greater zero cross distortion in order to keep lower temperature
@@ -90,26 +59,11 @@
 // next PWMSAFETIME clock cycles)
 #define PWMSAFETIME 50 // svgen takes 34 cycles. be conservative
 
-// PWMmax and PWMmin are PWMGUARD% and (100% - PWMGUARD%)
-// for example if PWMGUARD is 2 then max PWM is 98% and min is 2%
-#define PWMGUARD 2 
-
 //
 // CAN communication parameters
 //
 // Data rate of outgoing messages in 0.1 millisecond units
 #define CAN_OUTPUT_DATARATE (float)2.0
-// every CAN_STATE_PER messages a status message is generated
-#define CAN_STATUS_MSG_PERIOD 5000
-// Enable ack. for CAN set commands
-//#define CAN_ACK_EACH_COMMAND
-
-//the board send a periodic msg on received set point current, in oreder to synchronize the communication
-#define SYNC_2FOC_TO_EMS
-
-//this macro say how many ems can msg the 2foc must have received before sends a status message
-//the ems send a can msg every 1 ms 
-#define CAN_STATUS_MSG_PERIOD_SYNC_WITH_EMS  1000 //every 1 sec 2foc send one status message   
 
 //this macro let you to work with 2foc without fault
 //#define NO_FAULT
@@ -117,22 +71,10 @@
 //NOTE: if you use this mode, you must be sure that 2FOC can addres belong to [1, 4].
 #define DESIRED_CURR_IN_PER_MSG_BY_EMS          
 
-// Enable accept all commands (including setpoints) when in switch off state
-#define CAN_CMD_ALWAYS_ACCEPT
-
 // Oscillator Parameters
 #define PLLIN          10000000  // External Crystal or Clock Frequency (Hz)
 #define DESIREDMIPS	   40000000  // Enter desired MIPS
-
-// number of elements in the list of possible contents of periodic message
-#define ELEMENTS_IN_PERIODIC_DATA_LIST 0x30
-
-//number of points acquired in gulp circular buffer.
-//used to debug: it will contain last gulp trace before fault
-//NOTE FOR OPTIMIZATION PURPOSE THIS MUST BE A POW OF 2
-#define GULP_HISTORY_BUFFER_SIZE 512
-// this is the bitmask that is used to recirculate the ring buffer
-#define GULP_HISTORY_BUFFER_MASK (GULP_HISTORY_BUFFER_SIZE-1)
+#define PWMFREQUENCY      20000  // Hz
 
 #define BOARD_CAN_ADDR_DEFAULT 0xE
 
