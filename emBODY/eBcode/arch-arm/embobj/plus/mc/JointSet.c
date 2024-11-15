@@ -499,6 +499,11 @@ static int control_output_type(JointSet* o, int16_t control_mode, int16_t intera
 
 BOOL JointSet_set_control_mode(JointSet* o, eOmc_controlmode_command_t control_mode_cmd)
 {
+    if (control_mode_cmd == eomc_controlmode_cmd_velocity)
+    {
+        control_mode_cmd = eomc_controlmode_cmd_vel_direct;
+    }
+   
 #ifdef WRIST_MK2
     if(eomc_jsetconstraint_ergocubwrist == o->special_constraint)
     {

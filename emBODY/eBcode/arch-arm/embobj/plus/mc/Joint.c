@@ -961,7 +961,7 @@ void Joint_get_impedance(Joint* o, eOmc_impedance_t* impedance)
 void Joint_get_state(Joint* o, int j, eOmc_joint_status_t* joint_state)
 {
     joint_state->core.modes.interactionmodestatus    = o->interaction_mode;
-    joint_state->core.modes.controlmodestatus        = o->control_mode;
+    joint_state->core.modes.controlmodestatus        = (o->control_mode == eomc_controlmode_vel_direct) ? eomc_controlmode_velocity : o->control_mode;
     joint_state->core.modes.ismotiondone             = Trajectory_is_done(&o->trajectory);
     joint_state->core.measures.meas_position         = o->pos_fbk;           
     joint_state->core.measures.meas_velocity         = o->vel_fbk;        
@@ -1088,8 +1088,12 @@ static BOOL Joint_set_pos_ref_in_calib(Joint* o, CTRL_UNITS pos_ref, CTRL_UNITS 
     return(Joint_set_pos_ref_core(o, pos_ref_limited, vel_ref));
 }
 
+BOOL Joint_set_vel_raw(Joint* o, CTRL_UNITS vel_ref);
+
 BOOL Joint_set_vel_ref(Joint* o, CTRL_UNITS vel_ref, CTRL_UNITS acc_ref)
 {
+    return Joint_set_vel_raw(o, vel_ref);
+    
     WatchDog_rearm(&o->vel_ref_wdog);
     
     if ((o->control_mode != eomc_controlmode_vel_direct) &&
