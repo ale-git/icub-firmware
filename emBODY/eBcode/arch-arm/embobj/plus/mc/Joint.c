@@ -902,6 +902,28 @@ CTRL_UNITS Joint_do_vel_control(Joint* o)
                 break;
         }
 
+        if (o->pos_min != o->pos_max)
+        {    
+            if (o->pos_fbk <= o->pos_min)
+            {
+                if (o->vel_ref < ZERO)
+                {
+                    Trajectory_velocity_stop(&o->trajectory);
+
+                    o->vel_ref = ZERO;
+                }
+            }
+            else if (o->pos_fbk >= o->pos_max)
+            {
+                if (o->vel_ref > ZERO)
+                {
+                    Trajectory_velocity_stop(&o->trajectory);
+          
+                    o->vel_ref = ZERO;
+                }
+            }
+        }
+        
         LIMIT(o->vel_ref, o->vel_max);
                 
         return o->output = o->vel_ref;
