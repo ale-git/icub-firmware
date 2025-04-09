@@ -833,20 +833,28 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     {
         int iQerror = IqRef-I2Tdata.IQMeasured;
 
-        VqA += __builtin_mulss(iQerror-iQerror_old,IKp) + __builtin_mulss(iQerror+iQerror_old,IKi);
+//        VqA += __builtin_mulss(iQerror-iQerror_old,IKp) + __builtin_mulss(iQerror+iQerror_old,IKi);
+//
+//        iQerror_old = iQerror;
+//
+//        if (VqA > IIntLimit) VqA = IIntLimit; else if (VqA < -IIntLimit) VqA = -IIntLimit;
+//
+//        Vq = (int)(VqA>>IKs);
 
-        iQerror_old = iQerror;
+        // alternative formulation with ff term
+        VqA += __builtin_mulss(iQerror+iQerror_old,IKi);
 
         if (VqA > IIntLimit) VqA = IIntLimit; else if (VqA < -IIntLimit) VqA = -IIntLimit;
 
-        Vq = (int)(VqA>>IKs);
+        static const int IKbemf = 301; // 0.092 V/(rad/s)
+        
+        long VqF = VqA + __builtin_mulss(iQerror,IKp) + __builtin_mulss(IKbemf,gQEVelocity);
 
-        // alternative formulation with ff term
-        //VqA += __builtin_mulss(iQerror+iQerror_old,Ki);
-        //if (VqA > V_INT_LIMIT) VqA = V_INT_LIMIT; else if (VqA < -V_INT_LIMIT) VqA = -V_INT_LIMIT;
-        //long VqF = VqA + __builtin_mulss(43,IqRef) + __builtin_mulss(93,gQEVelocity);
-        //if (VqF > V_INT_LIMIT) VqF = V_INT_LIMIT; else if (VqF < -V_INT_LIMIT) VqF = -V_INT_LIMIT;
-        //Vq = (int)(VqF>>Kshift);
+        if (VqF > IIntLimit) VqF = IIntLimit; else if (VqF < -IIntLimit) VqF = -IIntLimit;
+
+        Vq = (int)(VqF>>IKs);
+        
+        iQerror_old = iQerror;
     }
     else // current open loop
     {
@@ -896,7 +904,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     ////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////
-    // BEMF section
+    // Id section
     int iDerror = -I2Tdata.IDMeasured;
 
     VdA += __builtin_mulss(iDerror-iDerror_old,IKp) + __builtin_mulss(iDerror+iDerror_old,IKi);
