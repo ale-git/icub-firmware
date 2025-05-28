@@ -204,11 +204,13 @@ volatile long sI2Tlimit = 0;
 
 volatile int  IKp = 0; //8;
 volatile int  IKi = 0; //2;
+volatile int  IRe = 0;
 volatile char IKs = 0; //10;
 volatile long IIntLimit = 0;//800L*1024L;
 
 volatile int  SKp = 0x0C;
 volatile int  SKi = 0x10;
+volatile int  SKe = 0x00;
 volatile char SKs = 0x0A;
 volatile long SIntLimit = 0;//800L*1024L;
 
@@ -228,19 +230,27 @@ void setMaxTemperature(int peak)
     gTemperatureLimit = peak;
 }
 
-void setIPid(int kp, int ki, char shift)
+void setIPid(int kp, int ki, int re, char shift)
 {
     IKp = kp;
     IKi = ki/2;
+    IRe = re;
     IKs = shift;
+    
+    if (ki == 0) ZeroControlReferences();
+                    
     IIntLimit = ((long)PWM_MAX)<<shift;
 }
 
-void setSPid(int kp, int ki, char shift)
+void setSPid(int kp, int ki, int ke, char shift)
 {
     SKp = kp;
     SKi = ki/2;
+    SKe = ke;
     SKs = shift;
+    
+    if (ki == 0) ZeroControlReferences();
+    
     SIntLimit = ((long)PWM_MAX)<<shift;
 }
 
@@ -307,6 +317,57 @@ void ResetSetpointWatchdog()
 BOOL updateOdometry()
 {
     if (MotorConfig.has_qe || MotorConfig.has_speed_qe)
+    {        
+        static int position_old = 0;
+        int position = QEgetPos();
+        int delta = position - position_old;
+
+        position_old = position;
+
+        if (sAlignInProgress)
+        {
+            gQEPosition = 0;
+            gQEVelocity = 0;
+            return FALSE;
+        }
+
+        gQEPosition += delta;
+
+        #define UNDERSAMPLING 20 // PWMFREQUENCY / 1000;
+        static int samples_circ_buffer[UNDERSAMPLING];
+        static BOOL init_samples = TRUE;
+        static int head = 0;   
+        
+        if (init_samples)
+        {
+            int i;
+            
+            for (i=0; i<UNDERSAMPLING; ++i) samples_circ_buffer[i] = gQEPosition;
+            
+            init_samples = FALSE;
+        }
+        
+        // gQEVelocity = (1 + gQEVelocity + gQEPosition - samples_circ_buffer[head]) / 2;        
+        gQEVelocity = gQEPosition - samples_circ_buffer[head];
+        samples_circ_buffer[head++] = gQEPosition;
+        head %= UNDERSAMPLING;
+
+        return TRUE;
+    }
+    else if (MotorConfig.has_hall)
+    {
+        gQEPosition = DHESPosition();
+        gQEVelocity = DHESVelocity();
+
+        return FALSE;
+    }
+
+    return FALSE;
+}
+/*
+BOOL updateOdometry()
+{
+    if (MotorConfig.has_qe || MotorConfig.has_speed_qe)
     {
         static const int UNDERSAMPLING = PWMFREQUENCY / 1000;
         static int speed_undersampler = 0;
@@ -351,6 +412,7 @@ BOOL updateOdometry()
 
     return FALSE;
 }
+*/
 
 volatile int rotorAfbk = 0;
 volatile int rotorBfbk = 0;
@@ -566,10 +628,19 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     
     // here we have a first stage filtering
     // each sample is mediated with the previous one
-    ParkParm.qIa = (MeasCurrParm.Offseta-ADCBuffer[0]) / 3;
-    ParkParm.qIc = (MeasCurrParm.Offsetc-ADCBuffer[1]) / 3;
+    int Ia = (MeasCurrParm.Offseta-ADCBuffer[0]) / 3;
+    int Ic = (MeasCurrParm.Offsetc-ADCBuffer[1]) / 3;
+    
+    static int IaOld = 0;
+    static int IcOld = 0;
+    
+    ParkParm.qIa = (Ia + IaOld)/2; 
+    ParkParm.qIc = (Ic + IcOld)/2;
     ParkParm.qIb = -ParkParm.qIa-ParkParm.qIc;
-        
+    
+    IaOld = Ia;
+    IcOld = Ic;
+    
     // gain = (64/49.03) * (1/3)
 
     int enc = 0;
@@ -758,7 +829,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
 
                 if (gControlMode == icubCanProto_controlmode_speed_current)
                 {
-                    Is += (((long) (speed_error - speed_error_old)) << 4) + (long) (speed_error + speed_error_old);
+                    Is += (((long) (speed_error - speed_error_old)) << 4) + (((long)(speed_error + speed_error_old))>>4); // divide by 16 because no more undersampling
 
                     if (Is > Ipeak) Is = Ipeak; else if (Is < -Ipeak) Is = -Ipeak;
 
@@ -784,7 +855,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
                     if (speed_error || CtrlReferences.WRef)
                     {
 #endif
-                    VqRef += __builtin_mulss(speed_error-speed_error_old,SKp) + __builtin_mulss(speed_error + speed_error_old,SKi);
+                    VqRef += __builtin_mulss(speed_error-speed_error_old,SKp) + (__builtin_mulss(speed_error + speed_error_old,SKi)>>4); // divide by 16 because no more undersampling
 
                     if (VqRef > SIntLimit) VqRef = SIntLimit; else if (VqRef < -SIntLimit) VqRef = -SIntLimit;
 #ifdef R1_UPPER_ARM
@@ -833,20 +904,32 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     {
         int iQerror = IqRef-I2Tdata.IQMeasured;
 
-        VqA += __builtin_mulss(iQerror-iQerror_old,IKp) + __builtin_mulss(iQerror+iQerror_old,IKi);
-
-        iQerror_old = iQerror;
-
-        if (VqA > IIntLimit) VqA = IIntLimit; else if (VqA < -IIntLimit) VqA = -IIntLimit;
-
-        Vq = (int)(VqA>>IKs);
-
         // alternative formulation with ff term
-        //VqA += __builtin_mulss(iQerror+iQerror_old,Ki);
-        //if (VqA > V_INT_LIMIT) VqA = V_INT_LIMIT; else if (VqA < -V_INT_LIMIT) VqA = -V_INT_LIMIT;
-        //long VqF = VqA + __builtin_mulss(43,IqRef) + __builtin_mulss(93,gQEVelocity);
-        //if (VqF > V_INT_LIMIT) VqF = V_INT_LIMIT; else if (VqF < -V_INT_LIMIT) VqF = -V_INT_LIMIT;
-        //Vq = (int)(VqF>>Kshift);
+        VqA += __builtin_mulss(iQerror+iQerror_old,IKi);
+
+        long VqF = __builtin_mulss(iQerror,IKp) + __builtin_mulss(IRe,IqRef);
+        
+        if (SKs>IKs)
+            VqF += __builtin_mulss(SKe,gQEVelocity)>>(SKs-IKs);
+        else
+            VqF += __builtin_mulss(SKe,gQEVelocity)<<(IKs-SKs);
+        
+        long VqT = VqA + VqF;
+        
+        if (VqT > IIntLimit)
+        {
+            VqA = IIntLimit - VqF;
+            VqT = IIntLimit;
+        }
+        else if (VqT < -IIntLimit)
+        {
+            VqA = -IIntLimit - VqF;
+            VqT = -IIntLimit;
+        }
+
+        Vq = (int)(VqT>>IKs);
+        
+        iQerror_old = iQerror;
     }
     else // current open loop
     {
@@ -896,7 +979,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
     ////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////
-    // BEMF section
+    // Id section
     int iDerror = -I2Tdata.IDMeasured;
 
     VdA += __builtin_mulss(iDerror-iDerror_old,IKp) + __builtin_mulss(iDerror+iDerror_old,IKi);
@@ -1326,7 +1409,7 @@ int main(void)
         }
     }
 
-    setSPid(SKp, SKi, SKs);
+    setSPid(SKp, SKi, SKe, SKs);
 
     Timer3Enable(); // EnableAuxServiceTimer();
 

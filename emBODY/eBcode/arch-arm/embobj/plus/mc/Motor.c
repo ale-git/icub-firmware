@@ -107,17 +107,17 @@ static void Motor_config_current_PID_2FOC(Motor* o, eOmc_PID_t* pidcurrent)
     float32_t ks = 1.0f/(float32_t)(1<<pidcurrent->scale);
     float32_t kp = ks*pidcurrent->kp;
     float32_t ki = ks*pidcurrent->ki;
-    float32_t kd = ks*pidcurrent->kd;
+    float32_t re = ks*pidcurrent->kff;
     
-    if (kp<0.0f || ki<0.0f || kd<0.0f) return;
+    if (kp<0.0f || ki<0.0f || re<0.0f) return;
     
     float32_t   max = kp;
     if (ki>max) max = ki;
-    if (kd>max) max = kd;
+    if (re>max) max = re;
     
     int16_t Kp = 0;
     int16_t Ki = 0;
-    int16_t Kd = 0;
+    int16_t Re = 0;
     uint8_t Ks = 0;
     
     for (int exponent = 0; exponent < 16; ++exponent)
@@ -128,7 +128,7 @@ static void Motor_config_current_PID_2FOC(Motor* o, eOmc_PID_t* pidcurrent)
         {
             Kp = (int16_t)(kp*32768.0f/power);
             Ki = (int16_t)(ki*32768.0f/power);
-            Kd = (int16_t)(kd*32768.0f/power);
+            Re = (int16_t)(re*32768.0f/power);
             Ks = 15-exponent;
             
             break;
@@ -136,7 +136,7 @@ static void Motor_config_current_PID_2FOC(Motor* o, eOmc_PID_t* pidcurrent)
     }
     
     // ICUBCANPROTO_POL_MC_CMD__SET_CURRENT_PID
-    embot::app::eth::mc::messaging::sender::Set_Current_PID msg {{&o->motorlocation}, {Kp, Ki, Kd, Ks}};
+    embot::app::eth::mc::messaging::sender::Set_Current_PID msg {{&o->motorlocation}, {Kp, Ki, Re, Ks}};
     msg.transmit(); 
 }
 
@@ -147,17 +147,17 @@ static void Motor_config_velocity_PID_2FOC(Motor* o, eOmc_PID_t* pidvelocity)
     float32_t ks = 1.0f/(float32_t)(1<<pidvelocity->scale);
     float32_t kp = ks*pidvelocity->kp;
     float32_t ki = ks*pidvelocity->ki;
-    float32_t kd = ks*pidvelocity->kd;
+    float32_t ke = ks*pidvelocity->kff;
     
-    if (kp<0.0f || ki<0.0f || kd<0.0f) return;
+    if (kp<0.0f || ki<0.0f || ke<0.0f) return;
     
     float32_t   max = kp;
     if (ki>max) max = ki;
-    if (kd>max) max = kd;
+    if (ke>max) max = ke;
     
     int16_t Kp = 0;
     int16_t Ki = 0;
-    int16_t Kd = 0;
+    int16_t Ke = 0;
     uint8_t Ks = 0;
     
     for (int exponent = 0; exponent < 16; ++exponent)
@@ -168,7 +168,7 @@ static void Motor_config_velocity_PID_2FOC(Motor* o, eOmc_PID_t* pidvelocity)
         {
             Kp = (int16_t)(kp*32768.0f/power);
             Ki = (int16_t)(ki*32768.0f/power);
-            Kd = (int16_t)(kd*32768.0f/power);
+            Ke = (int16_t)(ke*32768.0f/power);
             Ks = 15-exponent;
             
             break;
@@ -176,7 +176,7 @@ static void Motor_config_velocity_PID_2FOC(Motor* o, eOmc_PID_t* pidvelocity)
     }
 
     // ICUBCANPROTO_POL_MC_CMD__SET_VELOCITY_PID    
-    embot::app::eth::mc::messaging::sender::Set_Velocity_PID msg {{&o->motorlocation}, {Kp, Ki, Kd, Ks}};
+    embot::app::eth::mc::messaging::sender::Set_Velocity_PID msg {{&o->motorlocation}, {Kp, Ki, Ke, Ks}};
     msg.transmit();    
 }
 
