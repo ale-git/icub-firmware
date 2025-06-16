@@ -192,7 +192,7 @@ volatile long VqRef = 0;
 volatile int  IqRef = 0;
 
 volatile int speed_error_old = 0;
-volatile long Is = 0;
+volatile long IsA = 0;
 volatile int iQerror_old = 0;
 volatile int iDerror_old = 0;
 volatile int iQprot = 0;
@@ -204,13 +204,13 @@ volatile long sI2Tlimit = 0;
 
 volatile int  IKp = 0; //8;
 volatile int  IKi = 0; //2;
-volatile int  IRe = 0;
+volatile int  IKf = 0;
 volatile char IKs = 0; //10;
 volatile long IIntLimit = 0;//800L*1024L;
 
 volatile int  SKp = 0x0C;
 volatile int  SKi = 0x10;
-volatile int  SKe = 0x00;
+volatile int  SKf = 0x00;
 volatile char SKs = 0x0A;
 volatile long SIntLimit = 0;//800L*1024L;
 
@@ -230,11 +230,11 @@ void setMaxTemperature(int peak)
     gTemperatureLimit = peak;
 }
 
-void setIPid(int kp, int ki, int re, char shift)
+void setIPid(int kp, int ki, int kf, char shift)
 {
     IKp = kp;
     IKi = ki/2;
-    IRe = re;
+    IKf = kf;
     IKs = shift;
     
     if (ki == 0) ZeroControlReferences();
@@ -242,11 +242,11 @@ void setIPid(int kp, int ki, int re, char shift)
     IIntLimit = ((long)PWM_MAX)<<shift;
 }
 
-void setSPid(int kp, int ki, int ke, char shift)
+void setSPid(int kp, int ki, int kf, char shift)
 {
     SKp = kp;
     SKi = ki/2;
-    SKe = ke;
+    SKf = kf;
     SKs = shift;
     
     if (ki == 0) ZeroControlReferences();
@@ -266,7 +266,7 @@ void ZeroControlReferences()
     VqRef = 0;
     IqRef = 0;
     speed_error_old = 0;
-    Is = 0;
+    IsA = 0;
     iQerror_old = 0;
     iDerror_old = 0;
     iQprot = 0;
@@ -316,6 +316,8 @@ void ResetSetpointWatchdog()
 
 BOOL updateOdometry()
 {
+    static int vel_loop_clock = 0;
+    
     if (MotorConfig.has_qe || MotorConfig.has_speed_qe)
     {        
         static int position_old = 0;
@@ -351,8 +353,16 @@ BOOL updateOdometry()
         gQEVelocity = gQEPosition - samples_circ_buffer[head];
         samples_circ_buffer[head++] = gQEPosition;
         head %= UNDERSAMPLING;
-
-        return TRUE;
+        
+        if (++vel_loop_clock >= 20)
+        {
+            vel_loop_clock = 0;
+            return TRUE;
+        }
+        else
+        {
+            return FALSE;
+        }
     }
     else if (MotorConfig.has_hall)
     {
@@ -604,7 +614,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
 
     static short *iH,*iL,*i0;
 
-    static BOOL starting = TRUE;
+    //static BOOL starting = TRUE;
 
     // setting CORCON in this way rather than using CORCONbits is
     // slightly more efficient (because CORCONbits is volatile and
@@ -829,25 +839,25 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
 
                 if (gControlMode == icubCanProto_controlmode_speed_current)
                 {
-                    Is += (((long) (speed_error - speed_error_old)) << 4) + (((long)(speed_error + speed_error_old))>>4); // divide by 16 because no more undersampling
+                    // alternative formulation with ff term
+                    IsA += __builtin_mulss(speed_error+speed_error_old,SKi);
 
-                    if (Is > Ipeak) Is = Ipeak; else if (Is < -Ipeak) Is = -Ipeak;
+                    long IsF = __builtin_mulss(speed_error,SKp) + __builtin_mulss(SKf,CtrlReferences.WRef);
+                
+                    long IsT = IsA + IsF;
+        
+                    if (IsT > SIntLimit)
+                    {
+                        IsA = SIntLimit - IsF;
+                        IsT = SIntLimit;
+                    }
+                    else if (IsT < -SIntLimit)
+                    {
+                        IsA = -SIntLimit - IsF;
+                        IsT = -SIntLimit;
+                    }
 
-                    if (starting)
-                    {
-                        if (Is > 0)
-                        {
-                            if (Is > IqRef) ++IqRef; else { IqRef = (int)Is; starting = FALSE; }
-                        }
-                        else
-                        {
-                            if (Is < IqRef) --IqRef; else { IqRef = (int)Is; starting = FALSE; }
-                        }
-                    }
-                    else
-                    {
-                        IqRef = (int)Is;
-                    }
+                    IqRef = (int)(IsT>>SKs);
                 }
                 else
                 {
@@ -855,7 +865,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
                     if (speed_error || CtrlReferences.WRef)
                     {
 #endif
-                    VqRef += __builtin_mulss(speed_error-speed_error_old,SKp) + (__builtin_mulss(speed_error + speed_error_old,SKi)>>4); // divide by 16 because no more undersampling
+                    VqRef += __builtin_mulss(speed_error-speed_error_old,SKp) + __builtin_mulss(speed_error + speed_error_old,SKi); // divide by 4 because the undersampling is not 20x but 5x
 
                     if (VqRef > SIntLimit) VqRef = SIntLimit; else if (VqRef < -SIntLimit) VqRef = -SIntLimit;
 #ifdef R1_UPPER_ARM
@@ -907,13 +917,8 @@ void __attribute__((__interrupt__, no_auto_psv)) _DMA0Interrupt(void)
         // alternative formulation with ff term
         VqA += __builtin_mulss(iQerror+iQerror_old,IKi);
 
-        long VqF = __builtin_mulss(iQerror,IKp) + __builtin_mulss(IRe,IqRef);
-        
-        if (SKs>IKs)
-            VqF += __builtin_mulss(SKe,gQEVelocity)>>(SKs-IKs);
-        else
-            VqF += __builtin_mulss(SKe,gQEVelocity)<<(IKs-SKs);
-        
+        long VqF = __builtin_mulss(iQerror,IKp) + __builtin_mulss(IKf,IqRef);
+                
         long VqT = VqA + VqF;
         
         if (VqT > IIntLimit)
@@ -1409,7 +1414,7 @@ int main(void)
         }
     }
 
-    setSPid(SKp, SKi, SKe, SKs);
+    setSPid(SKp, SKi, SKf, SKs);
 
     Timer3Enable(); // EnableAuxServiceTimer();
 

@@ -1229,7 +1229,7 @@ BOOL Joint_set_vel_raw(Joint* o, CTRL_UNITS vel_ref)
 {
     WatchDog_rearm(&o->vel_ref_wdog);
     
-    if (o->control_mode != eomc_controlmode_vel_direct)
+    if (o->control_mode != eomc_controlmode_vel_direct && o->control_mode != eomc_controlmode_velocity)
     {
         return FALSE;
     }

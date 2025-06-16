@@ -276,10 +276,10 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
         {
             int  kp=((int)rxpayload->b[1])|(((int)rxpayload->b[2])<<8);
             int  ki=((int)rxpayload->b[3])|(((int)rxpayload->b[4])<<8);
-            int  re=((int)rxpayload->b[5])|(((int)rxpayload->b[6])<<8);
+            int  kf=((int)rxpayload->b[5])|(((int)rxpayload->b[6])<<8);
             char ks=rxpayload->b[7];
             
-            setIPid(kp,ki,re,ks);
+            setIPid(kp,ki,kf,ks);
             
             //static tCanData payload;
             
@@ -296,19 +296,19 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
         {
             static float fkp = 0.0f;
             static float fki = 0.0f;
-            static float fre = 0.0f;
+            static float fkf = 0.0f;
 
             switch (rxpayload->b[1])
             {
                 case 1: fkp = *(float*)&rxpayload->b[2]; break;
                 case 2: fki = *(float*)&rxpayload->b[2]; break;
-                case 3: fre = *(float*)&rxpayload->b[2]; break;
+                case 3: fkf = *(float*)&rxpayload->b[2]; break;
                 default: return 0;
             }
             
             float max = fkp;
             if (fki > max) max = fki;
-            if (fre > max) max = fre;
+            if (fkf > max) max = fkf;
             
             int exponent = 0;
             
@@ -320,9 +320,9 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
                 {
                     int kp = (int)(fkp*32768.0f/power);
                     int ki = (int)(fki*32768.0f/power);
-                    int re = (int)(fre*32768.0f/power);
+                    int kf = (int)(fkf*32768.0f/power);
                     
-                    setIPid(kp,ki,re,15-exponent);
+                    setIPid(kp,ki,kf,15-exponent);
                     
                     return 1;
                 }
@@ -342,10 +342,10 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
         {
             int  kp=((int)rxpayload->b[1])|(((int)rxpayload->b[2])<<8);
             int  ki=((int)rxpayload->b[3])|(((int)rxpayload->b[4])<<8);
-            int  ke=((int)rxpayload->b[5])|(((int)rxpayload->b[6])<<8);
+            int  kf=((int)rxpayload->b[5])|(((int)rxpayload->b[6])<<8);
             char ks=rxpayload->b[7];
             
-            setSPid(kp,ki,ke,ks);
+            setSPid(kp,ki,kf,ks);
             
             //static tCanData payload;
             
@@ -362,19 +362,19 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
         {
             static float fkp = 0.0f;
             static float fki = 0.0f;
-            static float fke = 0.0f;
+            static float fkf = 0.0f;
             
             switch (rxpayload->b[1])
             {
                 case 1: fkp = *(float*)&rxpayload->b[2]; break;
                 case 2: fki = *(float*)&rxpayload->b[2]; break;
-                case 3: fke = *(float*)&rxpayload->b[2]; break;
+                case 3: fkf = *(float*)&rxpayload->b[2]; break;
                 default: return 0;
             }
             
             float max = fkp;
             if (fki > max) max = fki;
-            if (fke > max) max = fke;
+            if (fkf > max) max = fkf;
             
             int exponent = 0;
             
@@ -386,7 +386,7 @@ static int s_canIcubProtoParser_parse_pollingMsg(tCanData *rxpayload, unsigned c
                 {
                     int kp = (int)(fkp*32768.0f/power);
                     int ki = (int)(fki*32768.0f/power);
-                    int ke = (int)(fke*32768.0f/power);
+                    int ke = (int)(fkf*32768.0f/power);
                     
                     setSPid(kp,ki,ke,15-exponent);
                     

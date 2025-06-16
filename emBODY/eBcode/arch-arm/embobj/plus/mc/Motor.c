@@ -591,7 +591,8 @@ BOOL Motor_set_run(Motor* o, int16_t low_lev_ctrl_type)
             break;
         
         case eomc_ctrl_out_type_vel:
-            control_mode = icubCanProto_controlmode_speed_voltage;
+            //control_mode = icubCanProto_controlmode_speed_voltage;
+            control_mode = icubCanProto_controlmode_speed_current;
             break;
 
         case eomc_ctrl_out_type_cur:
@@ -1354,6 +1355,7 @@ BOOL Motor_is_running(Motor* o)
         case icubCanProto_controlmode_openloop:
         case icubCanProto_controlmode_speed_voltage:
         case icubCanProto_controlmode_current:
+        case icubCanProto_controlmode_speed_current:
             return TRUE;
         
         default: 
