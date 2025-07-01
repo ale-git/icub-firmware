@@ -171,8 +171,10 @@ void JointSet_do_odometry(JointSet* o) //
     int j0 = o->joints_of_set[0];
     int j1 = o->joints_of_set[1];
 
-    o->ankle_Jacobian.rtU.EndEffectorReferencesIn.Pitch.position.angularPosition = o->joint[j0].pos_fbk;
-    o->ankle_Jacobian.rtU.EndEffectorReferencesIn.Roll .position.angularPosition = o->joint[j1].pos_fbk;
+    #warning PARALLEL_ANKLE_WIP we must convert from icubdegrees to...?
+    #define ANGLE_CONVERSION_FACTOR 0
+    o->ankle_Jacobian.rtU.EndEffectorReferencesIn.Pitch.position.angularPosition = ANGLE_CONVERSION_FACTOR*o->joint[j0].pos_fbk;
+    o->ankle_Jacobian.rtU.EndEffectorReferencesIn.Roll .position.angularPosition = ANGLE_CONVERSION_FACTOR*o->joint[j1].pos_fbk;
     
     o->ankle_Jacobian.step();
     
