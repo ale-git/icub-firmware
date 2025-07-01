@@ -3535,7 +3535,7 @@
       <GroupNumber>16</GroupNumber>
       <FileNumber>106</FileNumber>
       <FileType>8</FileType>
-      <tvExp>1</tvExp>
+      <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\..\..\embobj\plus\mc\Motor.c</PathWithFileName>
@@ -4451,7 +4451,7 @@
 
   <Group>
     <GroupName>mbd::torque-estimator</GroupName>
-    <tvExp>1</tvExp>
+    <tvExp>0</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -4464,6 +4464,26 @@
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\..\..\mbd\torque_estimator\TorqueEstimator.cpp</PathWithFileName>
       <FilenameWithoutPath>TorqueEstimator.cpp</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+  </Group>
+
+  <Group>
+    <GroupName>mbd::ankle-decoupler</GroupName>
+    <tvExp>0</tvExp>
+    <tvExpOptDlg>0</tvExpOptDlg>
+    <cbSel>0</cbSel>
+    <RteFlg>0</RteFlg>
+    <File>
+      <GroupNumber>29</GroupNumber>
+      <FileNumber>176</FileNumber>
+      <FileType>8</FileType>
+      <tvExp>0</tvExp>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>..\..\..\..\..\mbd\ankle_decoupler\codegen_Jacobian.cpp</PathWithFileName>
+      <FilenameWithoutPath>codegen_Jacobian.cpp</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>

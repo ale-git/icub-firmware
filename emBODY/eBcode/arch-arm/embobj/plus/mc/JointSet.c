@@ -161,16 +161,63 @@ void JointSet_config //
     o->absEncoder = absEncoder;
     o->Jjm = Jjm; o->Sjm = Sjm;
     o->Jmj = Jmj; o->Smj = Smj;
-    o->Sje = Sje;
+    o->Sje = Sje;   
 }
 
 void JointSet_do_odometry(JointSet* o) //
 {
+    #if defined(PARALLEL_ANKLE)
+    #warning PARALLEL_ANKLE_WIP starts here
+    int j0 = o->joints_of_set[0];
+    int j1 = o->joints_of_set[1];
+
+    o->ankle_Jacobian.rtU.EndEffectorReferencesIn.Pitch.position.angularPosition = o->joint[j0].pos_fbk;
+    o->ankle_Jacobian.rtU.EndEffectorReferencesIn.Roll .position.angularPosition = o->joint[j1].pos_fbk;
+    
+    o->ankle_Jacobian.step();
+    
+    #warning PARALLEL_ANKLE_WIP check the order!!!!!!!!!!!!!!!!!
+    float32_t m00 = o->ankle_Jacobian.rtY.JacobianMatrix_2x2[0];
+    float32_t m01 = o->ankle_Jacobian.rtY.JacobianMatrix_2x2[1];
+    float32_t m10 = o->ankle_Jacobian.rtY.JacobianMatrix_2x2[2];
+    float32_t m11 = o->ankle_Jacobian.rtY.JacobianMatrix_2x2[3];
+    
+    // from configuration 
+    //copyMatrix4X4(o->Jmj, jomoCouplingInfo->joint2motor);
+    //copyMatrix4X4(o->Jjm, jomoCouplingInfo->motor2joint);
+    //copyMatrix4X4(o->Sjm, jomoCouplingInfo->motor2joint);
+    //invert_matrix(o->Sjm, o->Smj, 4);
+    
+    //Jmj, Smj = inverse Jacobian
+    //Jjm, Sjm = direct  Jacobian
+    
+    if (o->Jjm && o->Jmj && o->Sjm && o->Smj)
+    {        
+        #warning PARALLEL_ANKLE_WIP the output of codegen_Jacobian is the direct Jacobian?
+        o->Jjm[0][0] = o->Sjm[0][0] =  m00;
+        o->Jjm[0][1] = o->Sjm[0][1] =  m01;
+        o->Jjm[1][0] = o->Sjm[1][0] =  m10;
+        o->Jjm[1][1] = o->Sjm[1][1] =  m11;
+    
+        float32_t invdet = 1.0f/(m00*m11-m01*m10);
+
+        o->Jmj[0][0] = o->Smj[0][0] =  m11*invdet;
+        o->Jmj[0][1] = o->Smj[0][1] = -m01*invdet;
+        o->Jmj[1][0] = o->Smj[1][0] = -m10*invdet;
+        o->Jmj[1][1] = o->Smj[1][1] =  m00*invdet;
+    }
+    else
+    {
+        JointSet_send_debug_message((char*)"Ankle coupling matrices can't be identity in configuration files!!!", 0, 0, 0); 
+    }
+
+    #endif
+    
     int js, j;
     int ms, m;
 
     int N = *(o->pN);
-            
+    
     float **Sjm = o->Sjm;
     
     if (Sjm)

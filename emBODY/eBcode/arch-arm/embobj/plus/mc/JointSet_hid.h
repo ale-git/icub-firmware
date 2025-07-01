@@ -8,6 +8,10 @@
 #ifndef MC_JOINTSET_HID___
 #define MC_JOINTSET_HID___
 
+#ifdef PARALLEL_ANKLE
+#include "codegen_Jacobian.h"
+#endif
+
 #ifdef WRIST_MK2
 #include "Trajectory_hid.h"
 #include "wrist_decoupler.h"
@@ -120,7 +124,6 @@ struct JointSet_hid
         
     uint32_t calibration_wait;
     
- 
     int16_t motor_input_type;
     eOmc_controlmode_t control_mode;
     eOmc_interactionmode_t interaction_mode;
@@ -143,6 +146,11 @@ struct JointSet_hid
     #ifdef WRIST_MK2
     wristMK2_t wristMK2;
     #endif
+
+    #if defined(PARALLEL_ANKLE)
+    codegen_Jacobian ankle_Jacobian;
+    #endif
+
 
     TripodCalib tripod_calib;
     HardStopCalib hard_stop_calib;    
