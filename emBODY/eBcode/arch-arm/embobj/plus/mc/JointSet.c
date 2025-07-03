@@ -172,17 +172,17 @@ void JointSet_do_odometry(JointSet* o) //
     int j1 = o->joints_of_set[1];
 
     #warning PARALLEL_ANKLE_WIP we must convert from icubdegrees to...?
-    #define ANGLE_CONVERSION_FACTOR 0
-    o->ankle_Jacobian.rtU.EndEffectorReferencesIn.Pitch.position.angularPosition = ANGLE_CONVERSION_FACTOR*o->joint[j0].pos_fbk;
-    o->ankle_Jacobian.rtU.EndEffectorReferencesIn.Roll .position.angularPosition = ANGLE_CONVERSION_FACTOR*o->joint[j1].pos_fbk;
+    static const float IDEG2RAD = 3.141592f/32768.0f;
+    o->ankle_Jacobian.rtU.Pitch.angularPosition = IDEG2RAD*o->joint[j0].pos_fbk;
+    o->ankle_Jacobian.rtU.Roll.angularPosition  = IDEG2RAD*o->joint[j1].pos_fbk;
     
     o->ankle_Jacobian.step();
     
     #warning PARALLEL_ANKLE_WIP check the order!!!!!!!!!!!!!!!!!
-    float32_t m00 = o->ankle_Jacobian.rtY.JacobianMatrix_2x2[0];
-    float32_t m01 = o->ankle_Jacobian.rtY.JacobianMatrix_2x2[1];
-    float32_t m10 = o->ankle_Jacobian.rtY.JacobianMatrix_2x2[2];
-    float32_t m11 = o->ankle_Jacobian.rtY.JacobianMatrix_2x2[3];
+    float32_t m00 = o->ankle_Jacobian.rtY.J[0];
+    float32_t m01 = o->ankle_Jacobian.rtY.J[1];
+    float32_t m10 = o->ankle_Jacobian.rtY.J[2];
+    float32_t m11 = o->ankle_Jacobian.rtY.J[3];
     
     // from configuration 
     //copyMatrix4X4(o->Jmj, jomoCouplingInfo->joint2motor);

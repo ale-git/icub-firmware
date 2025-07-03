@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'codegen_Jacobian'.
 //
-// Model version                  : 1.10
+// Model version                  : 1.21
 // Simulink Coder version         : 25.1 (R2025a) 21-Nov-2024
-// C/C++ source code generated on : Mon Jun 30 15:45:57 2025
+// C/C++ source code generated on : Thu Jul  3 17:01:58 2025
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: ARM Compatible->ARM Cortex-M
@@ -22,147 +22,12 @@
 #define codegen_Jacobian_h_
 #include <cmath>
 #include "rtwtypes.h"
-#ifndef DEFINED_TYPEDEF_FOR_Data_linearVelocity_
-#define DEFINED_TYPEDEF_FOR_Data_linearVelocity_
-
-struct Data_linearVelocity
-{
-  real32_T velocity;
-};
-
-#endif
-
-#ifndef DEFINED_TYPEDEF_FOR_Data_linearPosition_
-#define DEFINED_TYPEDEF_FOR_Data_linearPosition_
-
-struct Data_linearPosition
-{
-  real32_T position;
-};
-
-#endif
-
-#ifndef DEFINED_TYPEDEF_FOR_Data_linearAcceleration_
-#define DEFINED_TYPEDEF_FOR_Data_linearAcceleration_
-
-struct Data_linearAcceleration
-{
-  real_T acceleration;
-};
-
-#endif
-
-#ifndef DEFINED_TYPEDEF_FOR_Data_force_
-#define DEFINED_TYPEDEF_FOR_Data_force_
-
-struct Data_force
-{
-  real_T force;
-};
-
-#endif
-
-#ifndef DEFINED_TYPEDEF_FOR_Data_dutyCycle_
-#define DEFINED_TYPEDEF_FOR_Data_dutyCycle_
-
-struct Data_dutyCycle
-{
-  real_T dutyCycle;
-};
-
-#endif
-
-#ifndef DEFINED_TYPEDEF_FOR_Data_current_
-#define DEFINED_TYPEDEF_FOR_Data_current_
-
-struct Data_current
-{
-  real_T current;
-};
-
-#endif
-
-#ifndef DEFINED_TYPEDEF_FOR_Data_linearReferences_
-#define DEFINED_TYPEDEF_FOR_Data_linearReferences_
-
-struct Data_linearReferences
-{
-  Data_linearVelocity velocity;
-  Data_linearPosition position;
-  Data_linearAcceleration acceleration;
-  Data_force force;
-  Data_dutyCycle dutyCycle;
-  Data_current current;
-};
-
-#endif
-
 #ifndef DEFINED_TYPEDEF_FOR_Data_angularPosition_
 #define DEFINED_TYPEDEF_FOR_Data_angularPosition_
 
 struct Data_angularPosition
 {
   real32_T angularPosition;
-};
-
-#endif
-
-#ifndef DEFINED_TYPEDEF_FOR_Data_angularVelocity_
-#define DEFINED_TYPEDEF_FOR_Data_angularVelocity_
-
-struct Data_angularVelocity
-{
-  real32_T angularVelocity;
-};
-
-#endif
-
-#ifndef DEFINED_TYPEDEF_FOR_Data_angularAcceleration_
-#define DEFINED_TYPEDEF_FOR_Data_angularAcceleration_
-
-struct Data_angularAcceleration
-{
-  real_T angularAcceleration;
-};
-
-#endif
-
-#ifndef DEFINED_TYPEDEF_FOR_Data_torque_
-#define DEFINED_TYPEDEF_FOR_Data_torque_
-
-struct Data_torque
-{
-  real_T torque;
-};
-
-#endif
-
-#ifndef DEFINED_TYPEDEF_FOR_Data_rotationalReferences_
-#define DEFINED_TYPEDEF_FOR_Data_rotationalReferences_
-
-struct Data_rotationalReferences
-{
-  Data_angularPosition position;
-  Data_angularVelocity velocity;
-  Data_angularAcceleration acceleration;
-  Data_torque torque;
-  Data_dutyCycle dutyCycle;
-  Data_current current;
-};
-
-#endif
-
-#ifndef DEFINED_TYPEDEF_FOR_Data_References_
-#define DEFINED_TYPEDEF_FOR_Data_References_
-
-struct Data_References
-{
-  Data_linearReferences Actuator1;
-  Data_linearReferences Actuator2;
-  Data_rotationalReferences Motor2;
-  Data_rotationalReferences Motor1;
-  Data_rotationalReferences Roll;
-  Data_rotationalReferences Pitch;
 };
 
 #endif
@@ -174,12 +39,13 @@ class codegen_Jacobian final
  public:
   // External inputs (root inport signals with default storage)
   struct ExtU {
-    Data_References EndEffectorReferencesIn;// '<Root>/End Effector References In' 
+    Data_angularPosition Pitch;        // '<Root>/Pitch'
+    Data_angularPosition Roll;         // '<Root>/Roll'
   };
 
   // External outputs (root outports fed by signals with default storage)
   struct ExtY {
-    real32_T JacobianMatrix_2x2[4];    // '<Root>/JacobianMatrix_2x2'
+    real32_T J[4];                     // '<Root>/J'
   };
 
   // Real-time Model Data Structure
