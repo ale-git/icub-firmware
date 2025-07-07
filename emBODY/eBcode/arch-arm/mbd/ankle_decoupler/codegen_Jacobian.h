@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'codegen_Jacobian'.
 //
-// Model version                  : 1.21
+// Model version                  : 1.37
 // Simulink Coder version         : 25.1 (R2025a) 21-Nov-2024
-// C/C++ source code generated on : Thu Jul  3 17:01:58 2025
+// C/C++ source code generated on : Mon Jul  7 16:46:56 2025
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: ARM Compatible->ARM Cortex-M
@@ -45,7 +45,10 @@ class codegen_Jacobian final
 
   // External outputs (root outports fed by signals with default storage)
   struct ExtY {
-    real32_T J[4];                     // '<Root>/J'
+    real32_T J00;                      // '<Root>/J00'
+    real32_T J01;                      // '<Root>/J01'
+    real32_T J10;                      // '<Root>/J10'
+    real32_T J11;                      // '<Root>/J11'
   };
 
   // Real-time Model Data Structure
