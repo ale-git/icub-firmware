@@ -167,36 +167,28 @@ void JointSet_config //
 void JointSet_do_odometry(JointSet* o) //
 {
     #if defined(PARALLEL_ANKLE)
-    #warning PARALLEL_ANKLE_WIP starts here
-    int j0 = o->joints_of_set[0];
-    int j1 = o->joints_of_set[1];
-
-    #warning PARALLEL_ANKLE_WIP we must convert from icubdegrees to...?
-    static const float IDEG2RAD = 3.141592f/32768.0f;
-    o->ankle_Jacobian.rtU.Pitch.angularPosition = IDEG2RAD*o->joint[j0].pos_fbk;
-    o->ankle_Jacobian.rtU.Roll.angularPosition  = IDEG2RAD*o->joint[j1].pos_fbk;
-    
-    o->ankle_Jacobian.step();
-    
-    static const float IDEGMM2RADM = 3.141592f*1000.0f/32768.0f;
-    
-    #warning PARALLEL_ANKLE_WIP check the order!!!!!!!!!!!!!!!!!
-    float32_t m00 = IDEGMM2RADM*o->ankle_Jacobian.rtY.J00;
-    float32_t m01 = IDEGMM2RADM*o->ankle_Jacobian.rtY.J01;
-    float32_t m10 = IDEGMM2RADM*o->ankle_Jacobian.rtY.J10;
-    float32_t m11 = IDEGMM2RADM*o->ankle_Jacobian.rtY.J11;
-    
-    // from configuration 
-    //copyMatrix4X4(o->Jmj, jomoCouplingInfo->joint2motor);
-    //copyMatrix4X4(o->Jjm, jomoCouplingInfo->motor2joint);
-    //copyMatrix4X4(o->Sjm, jomoCouplingInfo->motor2joint);
-    //invert_matrix(o->Sjm, o->Smj, 4);
-    
-    //Jmj, Smj = inverse Jacobian
-    //Jjm, Sjm = direct  Jacobian
-    
     if (o->Jjm && o->Jmj && o->Sjm && o->Smj)
-    {        
+    {
+        #warning PARALLEL_ANKLE_WIP starts here
+        int j0 = o->joints_of_set[0];
+        int j1 = o->joints_of_set[1];
+
+        static const float IDEG2RAD = 3.141592f/32768.0f;
+        o->ankle_Jacobian.rtU.Pitch.angularPosition = IDEG2RAD*o->joint[j0].pos_fbk;
+        o->ankle_Jacobian.rtU.Roll.angularPosition  = IDEG2RAD*o->joint[j1].pos_fbk;
+    
+        o->ankle_Jacobian.step();
+    
+        static const float IDEGMM2RADM = 3.141592f*1000.0f/32768.0f;
+    
+        float32_t m00 = IDEGMM2RADM*o->ankle_Jacobian.rtY.J00;
+        float32_t m01 = IDEGMM2RADM*o->ankle_Jacobian.rtY.J01;
+        float32_t m10 = IDEGMM2RADM*o->ankle_Jacobian.rtY.J10;
+        float32_t m11 = IDEGMM2RADM*o->ankle_Jacobian.rtY.J11;
+    
+        //Jmj, Smj = inverse Jacobian
+        //Jjm, Sjm = direct  Jacobian
+    
         #warning PARALLEL_ANKLE_WIP the output of codegen_Jacobian is the inverse Jacobian
         o->Jmj[0][0] = o->Smj[0][0] =  m00;
         o->Jmj[0][1] = o->Smj[0][1] =  m01;
@@ -210,11 +202,6 @@ void JointSet_do_odometry(JointSet* o) //
         o->Jjm[1][0] = o->Sjm[1][0] = -m10*invdet;
         o->Jjm[1][1] = o->Sjm[1][1] =  m00*invdet;
     }
-    else
-    {
-        JointSet_send_debug_message((char*)"Ankle coupling matrices can't be identity in configuration files!!!", 0, 0, 0); 
-    }
-
     #endif
     
     int js, j;
@@ -1537,6 +1524,7 @@ static void JointSet_do_current_control(JointSet* o)
         }
         else
         {
+            #if !defined(PARALLEL_ANKLE)
             //if (o->Jmj)
             if (o->Jjm)
             {
@@ -1553,6 +1541,7 @@ static void JointSet_do_current_control(JointSet* o)
                 }
             }
             else
+            #endif
             {
                 motor_current_ref = o->joint[m].output;
             }
